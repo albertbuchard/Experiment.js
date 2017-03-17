@@ -1,0 +1,28 @@
+{
+  "env": {
+        "browser": true,
+        "jest": true
+    },
+    "extends": ["airbnb", "plugin:flowtype/recommended"],
+    "plugins": ["flowtype"],
+    "rules": {
+        "semi": [2, "never"],
+        "no-unexpected-multiline": 2,
+        "no-console": 0,
+        "no-plusplus": ["error", { "allowForLoopAfterthoughts": true }],
+        "no-prototype-builtins": 0,
+        "max-len": 0,
+        "no-extend-native": 0,
+        "no-param-reassign": 0,
+        "no-underscore-dangle": 0,
+        "global-require": 0,
+        "func-names": 0,
+        "class-methods-use-this": 0,
+        "no-restricted-syntax": 0,
+        "no-shadow": 0,
+        "no-loop-func": 0,
+        "no-continue": 0,
+        "no-mixed-operators": ["error", {"allowSamePrecedence": true}],
+        "import/no-mutable-exports": 0 
+    }
+}

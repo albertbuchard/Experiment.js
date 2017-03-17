@@ -1,0 +1,48 @@
+{
+  "name": "experiment-js",
+  "version": "0.5.0",
+  "description": "Javascript framework for 2D and 3D cross-platform experiments.",
+  "main": "index.js",
+  "author": "Albert Buchard",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "webpack --progress --colors --watch",
+    "prod": "PROD_ENV=1 webpack --progress --colors --watch",
+    "patchPublish": "npm version patch && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "devDependencies": {
+    "babel-cli": "^6.23.0",
+    "babel-core": "^6.23.1",
+    "babel-eslint": "^7.1.1",
+    "babel-jest": "^19.0.0",
+    "babel-loader": "^6.3.2",
+    "babel-preset-env": "^1.2.0",
+    "babel-preset-flow": "^6.23.0",
+    "coveralls": "^2.12.0",
+    "cross-env": "^3.2.3",
+    "eslint": "^3.17.0",
+    "eslint-config-airbnb": "^14.1.0",
+    "eslint-plugin-flowtype": "^2.30.3",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^4.0.0",
+    "eslint-plugin-react": "^6.10.0",
+    "expose-loader": "^0.7.3",
+    "flow-bin": "^0.41.0",
+    "husky": "^0.13.2",
+    "jest": "^19.0.2",
+    "webpack": "^2.2.1",
+    "webpack-dev-server": "^2.4.1"
+  },
+  "dependencies": {
+    "chartjs": "^0.3.24",
+    "experiment-babylon-js": "^2.5.4",
+    "experiment-boxes": "^0.1.21",
+    "experiment-mathjs": "^3.10.2",
+    "jquery": "^3.1.1",
+    "lodash": "^4.17.4"
+  }
+}
