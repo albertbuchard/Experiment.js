@@ -11,6 +11,7 @@
 import _ from 'lodash'
 import { BABYLON } from 'experiment-babylon-js'
 import { ParamBox, SmartModal } from 'experiment-boxes'
+import Promise from 'bluebird'
 
 import DataManager from './DataManager'
 import RessourceManager from './RessourceManager'
@@ -52,15 +53,15 @@ export default class TaskObject {
     assetsFolder = null,
     loadingSceneGenerator = null,
     engine = 'babylon') {
-    if (typeof window !== 'undefined') { // TODO should it fail more gracefully ?
+    if (typeof window === 'undefined') { // TODO should it fail more gracefully ?
       return { error: 'Wrong environment. ExperimentJS only works in the browser.' }
     }
     /* --- Constants --- */
     // this.constants = {};
 
     /* --- Store canvas information --- */
-    this._target = target
-    this.canvas = target.get(0)
+    this._target = (typeof target.length !== 'undefined') ? target[0] : target
+    this.canvas = this._target
 
     /* --- Setup engine --- */
     if (engine === 'babylon') {
@@ -152,6 +153,10 @@ export default class TaskObject {
     this.sceneGenerators.functions = {}
     this.sceneGenerators.functionsOptions = {}
 
+    /* --- Set a default loading scene --- */
+    this.sceneGenerators.loading = TaskObject.default2dSceneGenerator
+    this.sceneGenerators.loadingOptions = { sceneKey: 'loading' }
+
     this._currentSceneKey = ''
 
     /* --- ParamBox setup --- */
@@ -231,6 +236,61 @@ export default class TaskObject {
     return Promise.all(promises)
   }
 
+  static default2dSceneGenerator(options) {
+    /* --- Get the taskObject instance from binded context --- */
+    const taskObject = this.taskObject
+
+    const optionsBase = {
+      canvasBackground: new BABYLON.Color4(1, 1, 1, 1),
+      backgroundRoundRadius: 0,
+      clearColor: new BABYLON.Color4(1, 1, 1, 1),
+      canvasPercentWidth: 1,
+      canvasPercentHeight: 1,
+      mode: 'central',
+      level: null,
+    }
+
+    options = _.extend(optionsBase, options)
+
+  /* --- Create a basic 2D scene using a Canvas2D as background --- */
+    const scene = taskObject.create2DScene(options)
+
+ // /* --- Load assets --- */
+    const assetObject = {
+      logo: {
+        path: '/assets/experiment-js.svg',
+        type: 'texture',
+      },
+    }
+
+ // add content loaded text
+    scene.loadingPromise = taskObject.loadAssets(assetObject, scene)
+    .then(() => {
+      const canvas = scene.initialCanvas
+      const texture = new BABYLON.Texture('../assets/experiment-js.svg', scene, true, false, BABYLON.Texture.NEAREST_SAMPLINGMODE)
+      texture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE
+      texture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE
+      const ts = texture.getSize()
+      const logo = new BABYLON.Sprite2D(texture, {
+        parent: canvas,
+        id: 'logo',
+        x: 100,
+        y: 100,
+        origin: BABYLON.Vector2.Zero(),
+      })
+      logo.scaleToSize(new BABYLON.Size(taskObject.renderSize.height * 0.3, 3000 * taskObject.renderSize.height * 0.3 / 730))
+      const text = new BABYLON.Text2D('Welcome !', {
+        id: 'text',
+        parent: canvas,
+        marginAlignment: 'h: center, v:center',
+        fontName: '40pt Gill Sans',
+      })
+    })
+
+
+    return scene
+  }
+
   cloneAssetsIntoScene(assets = mandatory(), scene = mandatory()) {
     if (assets.constructor !== Array) {
       assets = [assets]
@@ -270,7 +330,7 @@ export default class TaskObject {
       assetFolder = this.ASSETS_FOLDER
     }
 
-    const textureFormats = ['png', 'bmp', 'jpg', 'tiff']
+    const textureFormats = ['png', 'bmp', 'jpg', 'tiff', 'svg']
 
     const assetManager = new BABYLON.AssetsManager(scene)
     const R = this.R
@@ -319,7 +379,7 @@ export default class TaskObject {
     assetManager.load()
     assetManager.onFinish = function onFinish(tasks) {
       debuglog('TaskObject.loadAssets: tasks completed', tasks)
-      loadDeferred.resolve(scene)
+      loadDeferred.resolve(tasks)
     }
 
     return loadDeferred.promise
@@ -357,7 +417,7 @@ export default class TaskObject {
    * Creates the game engine object and loads the scenes.
    */
   startTask() {
-    if ((typeof window === 'undefined') || (typeof process !== 'undefined')) {
+    if (typeof window === 'undefined') {
       return Promise.resolve()
     }
 
