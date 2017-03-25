@@ -1,13 +1,14 @@
 
 /** @module StateManager */
 import _ from 'lodash'
-import { BABYLON } from 'experiment-babylon-js'
+import { BABYLON } from 'experiment-babylon-js/lib/babylon.custom.js'
 
 import RessourceManager from './RessourceManager'
 import State from './State'
 import DataManager from './DataManager'
 import EventData from './EventData'
 import { mandatory, debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor } from './utilities'
+
 
 /**
  * Manage lifecycle and variables through State objects.

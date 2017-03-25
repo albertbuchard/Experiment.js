@@ -10,6 +10,7 @@
 /* =============== Set-up =============== */
 import _ from 'lodash'
 import { BABYLON } from 'experiment-babylon-js'
+
 import { ParamBox, SmartModal } from 'experiment-boxes'
 import Promise from 'bluebird'
 
@@ -27,7 +28,9 @@ import {
   debuglog,
   debugWarn,
 } from './utilities'
-import { DEBUG_MODE_ON } from '../config'
+
+
+const BABYLON = require('experiment-babylon-js/lib/babylon.custom.js')
 
 
 if (typeof window !== 'undefined') {
@@ -134,7 +137,7 @@ export default class TaskObject {
     /* --- Set-up events --- */
     this.flags = {}
     this.keyState = [] // holds state of keys being stroked indexed by event.keyCode
-    this.shouldShowDebug = typeof DEBUG_MODE_ON !== 'undefined' ? DEBUG_MODE_ON : false
+    this.shouldShowDebug = typeof window.DEBUG_MODE_ONE !== 'undefined' ? window.DEBUG_MODE_ONE : false
     this.setupGlobalEvents()
 
     /* --- Modals --- */
@@ -241,9 +244,9 @@ export default class TaskObject {
     const taskObject = this.taskObject
 
     const optionsBase = {
-      canvasBackground: new BABYLON.Color4(1, 1, 1, 1),
+      canvasBackground: new BABYLON.Color4(1, 0, 1, 1),
       backgroundRoundRadius: 0,
-      clearColor: new BABYLON.Color4(1, 1, 1, 1),
+      clearColor: new BABYLON.Color4(0, 0, 0, 1),
       canvasPercentWidth: 1,
       canvasPercentHeight: 1,
       mode: 'central',
@@ -256,36 +259,38 @@ export default class TaskObject {
     const scene = taskObject.create2DScene(options)
 
  // /* --- Load assets --- */
-    const assetObject = {
-      logo: {
-        path: '/assets/experiment-js.svg',
-        type: 'texture',
-      },
-    }
+    // const assetObject = {
+    //   // logo: {
+    //   //   path: '/assets/experiment-js.png',
+    //   //   type: 'texture',
+    //   // },
+    // }
 
  // add content loaded text
-    scene.loadingPromise = taskObject.loadAssets(assetObject, scene)
-    .then(() => {
-      const canvas = scene.initialCanvas
-      const texture = new BABYLON.Texture('../assets/experiment-js.svg', scene, true, false, BABYLON.Texture.NEAREST_SAMPLINGMODE)
-      texture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE
-      texture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE
-      const ts = texture.getSize()
-      const logo = new BABYLON.Sprite2D(texture, {
-        parent: canvas,
-        id: 'logo',
-        x: 100,
-        y: 100,
-        origin: BABYLON.Vector2.Zero(),
-      })
-      logo.scaleToSize(new BABYLON.Size(taskObject.renderSize.height * 0.3, 3000 * taskObject.renderSize.height * 0.3 / 730))
-      const text = new BABYLON.Text2D('Welcome !', {
-        id: 'text',
-        parent: canvas,
-        marginAlignment: 'h: center, v:center',
-        fontName: '40pt Gill Sans',
-      })
+    scene.loadingPromise = Promise.resolve()
+    // taskObject.loadAssets(assetObject, scene)
+    // .then(() => {
+    // const canvas = scene.initialCanvas
+    // const texture = new BABYLON.Texture('../assets/experiment-js.png', scene, true, false, BABYLON.Texture.NEAREST_SAMPLINGMODE)
+    // texture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE
+    // texture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE
+    // const ts = texture.getSize()
+    // const logo = new BABYLON.Sprite2D(texture, {
+    //   parent: canvas,
+    //   id: 'logo',
+    //   x: 100,
+    //   y: 100,
+    //   origin: BABYLON.Vector2.Zero(),
+    // })
+    // logo.scaleToSize(new BABYLON.Size(taskObject.renderSize.height * 0.3, 3000 * taskObject.renderSize.height * 0.3 / 730))
+    const text = new BABYLON.Text2D('Welcome !', {
+      id: 'text',
+      parent: scene.initialCanvas,
+      fontName: '40pt Gill Sans',
+      marginAlignment: 'h: center, v:center',
     })
+
+    // })
 
 
     return scene
@@ -668,6 +673,11 @@ export default class TaskObject {
 
     options = _.extend(optionsBase, options)
 
+    let customSized = null
+    if ((options.canvasPercentHeight !== 1) || (options.canvasPercentWidth !== 1)) {
+      customSized = new BABYLON.Size(this.renderSize.width * options.canvasPercentWidth, this.renderSize.height * options.canvasPercentHeight)
+    }
+
     const scene = new BABYLON.Scene(this.engine)
 
     /**
@@ -697,7 +707,7 @@ export default class TaskObject {
       fill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
       x: (this.renderSize.width / 2) - ((this.renderSize.width * options.canvasPercentWidth) / 2),
       y: (this.renderSize.height / 2) - ((this.renderSize.height * options.canvasPercentHeight) / 2),
-      size: new BABYLON.Size(this.renderSize.width * options.canvasPercentWidth, this.renderSize.height * options.canvasPercentHeight),
+      size: customSized,
       zOrder: 1,
       // cachingStrategy: BABYLON.Canvas2D.CACHESTRATEGY_CANVAS
     })
@@ -707,16 +717,18 @@ export default class TaskObject {
     scene.initialCamera = camera
 
     /* ======= Debug mode ======= */
-    if ((typeof DEBUG_MODE_ON !== 'undefined') && (DEBUG_MODE_ON === true)) {
-      canvas.createCanvasProfileInfoCanvas()
+    if ((typeof window.DEBUG_MODE_ONE !== 'undefined') && (window.DEBUG_MODE_ONE === true)) {
+      // canvas.createCanvasProfileInfoCanvas()
     }
 
     /* ======== Scene Lifecycle ======== */
 
     /* --- Resize handler --- */
     const updateContentFrame = function () {
-      this.initialCanvas.x = (this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2)
-      this.initialCanvas.y = (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2)
+      if (customSized) {
+        this.initialCanvas.x = (this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2)
+        this.initialCanvas.y = (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2)
+      }
     }
 
     scene.updateContentFrame = updateContentFrame
@@ -814,11 +826,11 @@ export default class TaskObject {
       this.scenes[sceneKey].stateManager.goToState(this.R.get.states_active)
 
       /* ======= Debug mode ======= */
-      if ((typeof DEBUG_MODE_ON !== 'undefined') && (DEBUG_MODE_ON === true) && (this.shouldShowDebug)) {
+      if ((typeof window.DEBUG_MODE_ONE !== 'undefined') && (window.DEBUG_MODE_ONE === true) && (this.shouldShowDebug)) {
         this.scenes[sceneKey].debugLayer.show()
 
         if (typeof this.scenes[sceneKey].initialCanvas !== 'undefined') {
-          this.scenes[sceneKey].initialCanvas.createCanvasProfileInfoCanvas()
+          // this.scenes[sceneKey].initialCanvas.createCanvasProfileInfoCanvas()
         }
       }
 
@@ -826,12 +838,12 @@ export default class TaskObject {
         this.scenes[this._currentSceneKey].stateManager.goToState(this.R.get.states_idle)
 
         /* ======= Debug mode ======= */
-        if ((typeof DEBUG_MODE_ON !== 'undefined') && (DEBUG_MODE_ON === true)) {
+        if ((typeof window.DEBUG_MODE_ONE !== 'undefined') && (window.DEBUG_MODE_ONE === true)) {
           this.scenes[this._currentSceneKey].debugLayer.hide()
 
           if ((typeof this.scenes[this._currentSceneKey].initialCanvas !== 'undefined') && (this.scenes[this._currentSceneKey].initialCanvas._profilingCanvas !== null)) {
-            this.scenes[this._currentSceneKey].initialCanvas._profilingCanvas.dispose()
-            this.scenes[this._currentSceneKey].initialCanvas._profilingCanvas = null
+            // this.scenes[this._currentSceneKey].initialCanvas._profilingCanvas.dispose()
+            // this.scenes[this._currentSceneKey].initialCanvas._profilingCanvas = null
           }
         }
       }

@@ -13,7 +13,7 @@ const plugins = [
   new webpack.optimize.OccurrenceOrderPlugin(),
 ]
 const prodPlugins = plugins.concat(new webpack.optimize.UglifyJsPlugin())
-// not really working
+
 export default {
   entry: './builder.js',
   target: 'web',
@@ -39,13 +39,12 @@ export default {
     extensions: ['.js', '.jsx'],
   },
   externals: {
-    jquery: 'jQuery',
-    chartjs: 'Chart',
-    lodash: '_',
-    'experiment-mathjs': 'math',
-    'experiment-boxes': 'experimentBoxes',
-    'experiment-babylon-js': 'EBJS',
-    bluebird: 'Promise',
+    jquery: true,
+    chartjs: true,
+    lodash: true,
+    'experiment-mathjs': true,
+    'experiment-boxes': true,
+    'experiment-babylon-js': true,
   },
   devServer: {
     port: WDS_PORT,
