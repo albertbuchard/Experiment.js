@@ -51,7 +51,6 @@ export default class TaskObject {
    */
   constructor(target = mandatory(),
     assetsFolder = null,
-    loadingSceneGenerator = null,
     engine = 'babylon') {
     if (typeof window === 'undefined') { // TODO should it fail more gracefully ?
       return { error: 'Wrong environment. ExperimentJS only works in the browser.' }
@@ -116,7 +115,7 @@ export default class TaskObject {
      * Object to store global task assets after loading or creation
      * @type {Object}
      */
-    // this.assets = {};
+    this.assetsToLoad = {}
 
     this.R = new RessourceManager()
     this.R.add({
@@ -241,7 +240,7 @@ export default class TaskObject {
     const taskObject = this.taskObject
 
     const optionsBase = {
-      canvasBackground: new BABYLON.Color4(1, 0, 1, 1),
+      canvasBackground: new BABYLON.Color4(1, 1, 1, 1),
       backgroundRoundRadius: 0,
       clearColor: new BABYLON.Color4(0, 0, 0, 1),
       canvasPercentWidth: 1,
@@ -256,38 +255,29 @@ export default class TaskObject {
     const scene = taskObject.create2DScene(options)
 
  // /* --- Load assets --- */
-    // const assetObject = {
-    //   // logo: {
-    //   //   path: '/assets/experiment-js.png',
-    //   //   type: 'texture',
-    //   // },
-    // }
+    const assetObject = {
+      logo: {
+        path: '/assets/experiment-js.svg',
+        type: 'texture',
+      },
+    }
 
  // add content loaded text
-    scene.loadingPromise = Promise.resolve()
-    // taskObject.loadAssets(assetObject, scene)
-    // .then(() => {
-    // const canvas = scene.initialCanvas
-    // const texture = new BABYLON.Texture('../assets/experiment-js.png', scene, true, false, BABYLON.Texture.NEAREST_SAMPLINGMODE)
-    // texture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE
-    // texture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE
-    // const ts = texture.getSize()
-    // const logo = new BABYLON.Sprite2D(texture, {
-    //   parent: canvas,
-    //   id: 'logo',
-    //   x: 100,
-    //   y: 100,
-    //   origin: BABYLON.Vector2.Zero(),
-    // })
-    // logo.scaleToSize(new BABYLON.Size(taskObject.renderSize.height * 0.3, 3000 * taskObject.renderSize.height * 0.3 / 730))
-    const text = new BABYLON.Text2D('Welcome !', {
-      id: 'text',
-      parent: scene.initialCanvas,
-      fontName: '40pt Gill Sans',
-      marginAlignment: 'h: center, v:center',
+    scene.loadingPromise = taskObject.loadAssets(assetObject, scene)
+    .then(() => {
+      const canvas = scene.initialCanvas
+      // const texture = new BABYLON.Texture('../assets/experiment-js.svg', scene)
+      const texture = taskObject.R.get.textures_logo
+      texture.hasAlpha = true
+      const height = math.max(taskObject.renderSize.height * 0.05, 45)
+      const logo = new BABYLON.Sprite2D(texture, {
+        parent: canvas,
+        id: 'logo',
+        marginAlignment: 'h: center, v:center',
+        size: new BABYLON.Size(height * 3000 / 730, height),
+        origin: BABYLON.Vector2.Zero(),
+      })
     })
-
-    // })
 
 
     return scene
