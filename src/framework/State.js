@@ -88,7 +88,7 @@ export default class State {
 
       const calledFunctions = []
       for (let i = 0; i < this._awakeningFunctions.length; i++) {
-        calledFunctions[i] = Promise.method(this._awakeningFunctions[i].bind(this.context))
+        calledFunctions[i] = Promise.method(this._awakeningFunctions[i].bind(this.context))()
       }
 
       Promise.all(calledFunctions).then(() => {
@@ -108,7 +108,7 @@ export default class State {
   end() {
     const calledFunctions = []
     for (let i = 0; i < this._endingFunctions.length; i++) {
-      calledFunctions[i] = Promise.method(this._endingFunctions[i].bind(this.context))
+      calledFunctions[i] = Promise.method(this._endingFunctions[i].bind(this.context))()
     }
 
     Promise.all(calledFunctions).then((data) => {
@@ -166,7 +166,7 @@ export default class State {
             })
         }
       } else {
-        Promise.method(eventFunctions.bind(this.context))
+        Promise.method(eventFunctions.bind(this.context))()
           .then(function (functionName, data) {
             /* Promise ran as expected, returned data */
             debuglog(data)
