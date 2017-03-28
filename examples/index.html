@@ -51,7 +51,7 @@
         canvasBackground: new BABYLON.Color4(0, 0, 0, 1),
         backgroundRoundRadius: 50,
         clearColor: new BABYLON.Color4(0, 0, 0, 1),
-        canvasPercentWidth: 0.8,
+        canvasPercentWidth: 1,
         canvasPercentHeight: 1,
         mode: 'central',
         level: null,
@@ -61,13 +61,33 @@
 
       const scene = taskObject.create2DScene(options)
 
+      const texture = taskObject.cloneAssetIntoScene(taskObject.R.get.textures_logo2, scene)
+      texture.hasAlpha = true
+      const height = math.max(taskObject.renderSize.height * 0.05, 45)
+      const logo = new BABYLON.Sprite2D(texture, {
+        parent: scene.initialCanvas,
+        id: 'logo2',
+        marginAlignment: 'h: center, v:center',
+        size: new BABYLON.Size(height * 3000 / 730, height),
+        origin: BABYLON.Vector2.Zero(),
+      })
+
       return scene
     }
 
     taskObject.registerSceneGenerator(sceneGenerator)
 
+    taskObject.assetsToLoad = {
+      logo2: {
+        path: '/assets/experiment-js-light.svg',
+        type: 'texture',
+      },
+    }
+
     taskObject.startTask().then((message) => {
       console.log(message)
+      // Try this in the console :
+      // taskObject.currentScene = 'main'
     })
 
     window.taskObject = taskObject

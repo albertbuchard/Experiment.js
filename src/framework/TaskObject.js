@@ -154,7 +154,7 @@ export default class TaskObject {
 
     /* --- Set a default loading scene --- */
     this.sceneGenerators.loading = TaskObject.default2dSceneGenerator
-    this.sceneGenerators.loadingOptions = { sceneKey: 'loading' }
+    this.sceneGenerators.loadingOptions = { sceneKey: 'loading', shouldLoadAssets: true }
 
     this._currentSceneKey = ''
 
@@ -247,6 +247,7 @@ export default class TaskObject {
       canvasPercentHeight: 1,
       mode: 'central',
       level: null,
+      shouldLoadAssets: false,
     }
 
     options = _.extend(optionsBase, options)
@@ -255,11 +256,16 @@ export default class TaskObject {
     const scene = taskObject.create2DScene(options)
 
  // /* --- Load assets --- */
-    const assetObject = {
+    let assetObject = {
       logo: {
         path: '/assets/experiment-js.svg',
         type: 'texture',
       },
+    }
+
+    // Will load all the assets contained in the task assetsToLoad variable
+    if (options.shouldLoadAssets) {
+      assetObject = _.extend(assetObject, taskObject.assetsToLoad)
     }
 
  // add content loaded text
@@ -712,10 +718,11 @@ export default class TaskObject {
 
     /* --- Resize handler --- */
     const updateContentFrame = function () {
-      if (customSized) {
-        this.initialCanvas.x = (this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2)
-        this.initialCanvas.y = (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2)
-      }
+      // NOTE not necessary in 2.6 it seems but keep the hook jsut in case
+      // if (customSized) {
+      //   this.initialCanvas.x = (this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2)
+      //   this.initialCanvas.y = (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2)
+      // }
     }
 
     scene.updateContentFrame = updateContentFrame
