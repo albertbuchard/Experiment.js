@@ -69,12 +69,6 @@ export default {
       amd: 'experiment-babylon-js',
       root: 'BABYLON',
     },
-    'experiment-babylon-js/lib/babylon.custom.js': {
-      commonjs: 'experiment-babylon-js/lib/babylon.custom.js',
-      commonjs2: 'experiment-babylon-js/lib/babylon.custom.js',
-      amd: 'experiment-babylon-js/lib/babylon.custom.js',
-      root: 'BABYLON',
-    },
   },
   plugins: PROD ? prodPlugins : plugins,
 }
