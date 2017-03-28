@@ -692,18 +692,19 @@ export default class TaskObject {
     scene.clearColor = options.clearColor
 
     const camera = new BABYLON.ArcRotateCamera('Camera', 0, Math.PI / 2, 12, BABYLON.Vector3.Zero(), scene)
-
-    const canvas = new BABYLON.ScreenSpaceCanvas2D(scene, {
+    const canvasOptions = {
       id: 'ScreenCanvas',
       backgroundFill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
       backgroundRoundRadius: options.backgroundRoundRadius,
       fill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
       x: (this.renderSize.width / 2) - ((this.renderSize.width * options.canvasPercentWidth) / 2),
       y: (this.renderSize.height / 2) - ((this.renderSize.height * options.canvasPercentHeight) / 2),
-      size: customSized,
+      designSize: customSized,
       zOrder: 1,
       // cachingStrategy: BABYLON.Canvas2D.CACHESTRATEGY_CANVAS
-    })
+    }
+
+    const canvas = new BABYLON.ScreenSpaceCanvas2D(scene, canvasOptions)
 
     /* Set the added canvas and camera to known fields in the scene*/
     scene.initialCanvas = canvas
