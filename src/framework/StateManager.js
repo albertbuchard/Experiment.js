@@ -2,6 +2,7 @@
 /** @module StateManager */
 import _ from 'lodash'
 import BABYLON from 'experiment-babylon-js'
+import Promise from 'bluebird'
 
 import RessourceManager from './RessourceManager'
 import State from './State'

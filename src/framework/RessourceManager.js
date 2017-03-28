@@ -1,5 +1,6 @@
 /** @module RessourceManager */
 import $ from 'jquery'
+import Promise from 'bluebird'
 import { mandatory, debugError, Deferred } from './utilities'
 
 /* JS Class for ressource management */

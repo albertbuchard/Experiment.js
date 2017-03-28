@@ -6,6 +6,7 @@
 
 import _ from 'lodash'
 import math from 'experiment-mathjs'
+import Promise from 'bluebird'
 
 import { DEBUG_MODE_ON } from '../config'
 

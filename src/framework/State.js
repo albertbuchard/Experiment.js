@@ -1,6 +1,7 @@
 
 /** @module State */
 import _ from 'lodash'
+import Promise from 'bluebird'
 import EventData from './EventData'
 import { mandatory, debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor } from './utilities'
 
