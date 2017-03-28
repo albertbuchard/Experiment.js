@@ -1,6 +1,6 @@
 {
   "name": "experiment-js",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Javascript framework for 2D and 3D cross-platform experiments.",
   "main": "index.js",
   "author": "Albert Buchard",
