@@ -28,3 +28,10 @@ SGB needs a three dimensional array of [eventName, duration, [allowedInputsFromU
 
 ## Dependencies
 BABYLON.js, Lodash, mathjs, jQuery
+
+# Author
+Made with ❤️ by Albert Buchard
+From the **Bavelier Lab** in Geneva
+
+# Licence
+Apache-2
