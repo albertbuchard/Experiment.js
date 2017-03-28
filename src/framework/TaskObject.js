@@ -9,7 +9,7 @@
 
 /* =============== Set-up =============== */
 import _ from 'lodash'
-import { BABYLON } from 'experiment-babylon-js'
+import BABYLON from 'experiment-babylon-js'
 
 import { ParamBox, SmartModal } from 'experiment-boxes'
 import Promise from 'bluebird'
@@ -28,9 +28,6 @@ import {
   debuglog,
   debugWarn,
 } from './utilities'
-
-
-const BABYLON = require('experiment-babylon-js/lib/babylon.custom.js')
 
 
 if (typeof window !== 'undefined') {

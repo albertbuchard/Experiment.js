@@ -1783,13 +1783,13 @@ expand-range@^1.8.1:
   dependencies:
     fill-range "^2.1.0"
 
-experiment-babylon-js@^2.5.4:
-  version "2.5.9"
-  resolved "https://registry.yarnpkg.com/experiment-babylon-js/-/experiment-babylon-js-2.5.9.tgz#1136db19486f727cd7a7be3787cf82aaa9e202f8"
+experiment-babylon-js@^2.5.11:
+  version "2.5.11"
+  resolved "https://registry.yarnpkg.com/experiment-babylon-js/-/experiment-babylon-js-2.5.11.tgz#e2fd44d3f1a67eada746162f6827805db9f275a6"
 
-experiment-boxes@^0.1.26:
-  version "0.1.26"
-  resolved "https://registry.yarnpkg.com/experiment-boxes/-/experiment-boxes-0.1.26.tgz#4a476f5d91c2aafe7fc74b34f0b1fbc7e91003ae"
+experiment-boxes@^0.1.27:
+  version "0.1.27"
+  resolved "https://registry.yarnpkg.com/experiment-boxes/-/experiment-boxes-0.1.27.tgz#63123eb4e760ed4f2918483a6c773234de998d82"
   dependencies:
     chartjs "^0.3.24"
     experiment-mathjs "^3.10.1"

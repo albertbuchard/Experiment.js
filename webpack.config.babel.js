@@ -1,9 +1,4 @@
-// @flow
-
-// import path from 'path'
 import webpack from 'webpack'
-
-const WDS_PORT = 7000
 
 const PROD = JSON.parse(process.env.PROD_ENV || '0')
 
@@ -16,7 +11,6 @@ const prodPlugins = plugins.concat(new webpack.optimize.UglifyJsPlugin())
 
 export default {
   entry: './builder.js',
-  target: 'web',
   output: {
     path: `${__dirname}/lib`,
     filename: outputFile,
@@ -39,16 +33,48 @@ export default {
     extensions: ['.js', '.jsx'],
   },
   externals: {
-    jquery: true,
-    chartjs: true,
-    lodash: true,
-    'experiment-mathjs': true,
-    'experiment-boxes': true,
-    'experiment-babylon-js': true,
-  },
-  devServer: {
-    port: WDS_PORT,
-    hot: true,
+    jquery: {
+      commonjs: 'jQuery',
+      commonjs2: 'jQuery',
+      amd: 'jQuery',
+      root: 'jQuery',
+    },
+    chartjs: {
+      commonjs: 'chartjs',
+      commonjs2: 'chartjs',
+      amd: 'chartjs',
+      root: 'Chart',
+    },
+    lodash: {
+      commonjs: 'lodash',
+      commonjs2: 'lodash',
+      amd: 'lodash',
+      root: '_',
+    },
+    'experiment-mathjs': {
+      commonjs: 'experiment-mathjs',
+      commonjs2: 'experiment-mathjs',
+      amd: 'experiment-mathjs',
+      root: 'math',
+    },
+    'experiment-boxes': {
+      commonjs: 'experiment-boxes',
+      commonjs2: 'experiment-boxes',
+      amd: 'experiment-boxes',
+      root: 'experimentBoxes',
+    },
+    'experiment-babylon-js': {
+      commonjs: 'experiment-babylon-js',
+      commonjs2: 'experiment-babylon-js',
+      amd: 'experiment-babylon-js',
+      root: 'BABYLON',
+    },
+    'experiment-babylon-js/lib/babylon.custom.js': {
+      commonjs: 'experiment-babylon-js/lib/babylon.custom.js',
+      commonjs2: 'experiment-babylon-js/lib/babylon.custom.js',
+      amd: 'experiment-babylon-js/lib/babylon.custom.js',
+      root: 'BABYLON',
+    },
   },
   plugins: PROD ? prodPlugins : plugins,
 }
