@@ -13,8 +13,16 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/albertbuchard/Experiment.js.git"
   },
+  "files": [
+    "assets/experiment-js.svg",
+    "assets/experiment-js-light.svg",
+    "lib/",
+    "test/",
+    "min.js",
+    "README.md"
+  ],
   "devDependencies": {
     "babel-cli": "^6.23.0",
     "babel-core": "^6.23.1",
