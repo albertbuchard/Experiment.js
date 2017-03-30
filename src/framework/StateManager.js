@@ -108,32 +108,37 @@ export default class StateManager {
 
   storeEvent(event = mandatory()) {
     if (this._dataManager.constructor !== DataManager) {
-      throw new Error('storeEvent: dataManager is not set, cannot store event.')
+      throw new Error('StateManager.storeEvent: dataManager is not set, cannot store event.')
     }
 
     if (!event.handled) {
       debuglog(event)
-      throw new Error('StateManager: cannot store an event that was not handled.')
+      throw new Error('StateManager.storeEvent:cannot store an event that was not handled.')
     }
 
     if (event.stored) {
       debuglog(event)
-      throw new Error('StateManager: Event already stored')
+      throw new Error('StateManager.storeEvent: Event already stored')
     }
 
     event.storedInErrorLog = false
-    for (let i = 0; i < event.data.belongsTo.length; i++) {
+    let belongsTo = event.data.belongsTo
+    if (belongsTo.constructor !== Array) {
+      belongsTo = [belongsTo]
+    }
+
+    for (let i = 0; i < belongsTo.length; i++) {
       try {
         event.data.storedAt = this.timeInMs
         event.stored = true
 
-        this._dataManager.addRows(event.data.belongsTo[i], event)
-
-        debuglog('StateManager: storing event.')
-        debuglog(event)
+        debuglog('StateManager.storeEvent: storing event.')
+        this._dataManager.addRows(belongsTo[i], event)
       } catch (error) {
-        console.log(`StateManager: Could not store data in ${event.data.belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
+        console.error(`StateManager.storeEvent: Could not store data in ${belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
         this.storeInErrorLog(event)
+      } finally {
+        debuglog('StateManager.storeEvent: event stored.', event)
       }
     }
   }
@@ -213,6 +218,38 @@ export default class StateManager {
     }
   }
 
+  /* ======= Interface ======= */
+  /* */
+
+
+  /**
+   * addGuiCanvas - Create a GUI Canvas always on top with a zOrder of -1
+   *
+   * @param {null} [scene=null] scene object
+   *
+   * @returns {BABYLON.ScreenSpaceCanvas2D} GUI canvas
+   */
+  addGuiCanvas() {
+    const scene = this._parent
+    mustHaveConstructor(BABYLON.Scene, scene)
+
+    const canvasOptions = {
+      id: 'GUI',
+      backgroundFill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0, 0, 0, 0)),
+      backgroundRoundRadius: 0,
+      x: 0,
+      y: 0,
+      zOrder: -1,
+    }
+
+    const GUI = new BABYLON.ScreenSpaceCanvas2D(scene, canvasOptions)
+
+    GUI.levelVisible = false
+    this.set('GUI', GUI)
+
+    return GUI
+  }
+
   /* === Pause State === */
 
   /**
@@ -286,13 +323,15 @@ export default class StateManager {
       }
       const stateManager = this.stateManager
 
-      let pauseBackground2D = stateManager.get('pauseBackground2D')
-      const elements2D = stateManager.get('elements2D')
-      const canvas = elements2D.canvas
+      const pauseBackground2D = stateManager.get('pauseBackground2D')
 
       if (pauseBackground2D !== null) {
-        pauseBackground2D.opacity = 1
+        pauseBackground2D.levelVisible = true
       } else {
+        const canvas = this.scene.initialCanvas
+        if (typeof canvas === 'undefined') {
+          return ('awakePause: initialCanvas is undefined.')
+        }
         // draw a rect2d of canvas size with background opacity 0.5
         // draw a large text2d "PAUSE" inside
         const baseOptions = {
@@ -304,30 +343,34 @@ export default class StateManager {
           height: canvas.height,
           fill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.3, 0.3, 0.3, 0.5)),
           fontName: '60pt Verdana',
+          backgroundRoundRadius: 0,
         }
 
         options = _.extend(baseOptions, options)
 
-        // var canvas = elements2D.canvas;
+        let customSized = null
+        if ((options.width !== canvas.width) || (options.height !== canvas.height)) {
+          customSized = new BABYLON.Size(options.width, options.height)
+        }
 
-        // create button and add to canvas
-        pauseBackground2D = new BABYLON.Rectangle2D({
-          parent: canvas,
+        const canvasOptions = {
           id: options.id,
-          x: options.x,
-          y: options.y,
-          width: options.width,
-          height: options.height,
+          backgroundFill: options.fill,
+          backgroundRoundRadius: options.backgroundRoundRadius,
           fill: options.fill,
-          roundRadius: 0,
+          x: (canvas.width / 2) - ((options.width) / 2),
+          y: (canvas.height / 2) - ((options.height) / 2),
+          designSize: customSized,
+          zOrder: 0,
           children: [
             new BABYLON.Text2D(options.text, {
               fontName: options.fontName,
-              marginVAlignment: 'v: top',
-              marginHAlignment: 3,
+              marginAlignment: 'h: center, v:bottom',
             }),
           ],
-        })
+        }
+
+        const pauseBackground2D = new BABYLON.ScreenSpaceCanvas2D(this.scene, canvasOptions)
 
         stateManager.set('pauseBackground2D', pauseBackground2D) // TODO Make those string part of R.
       }
@@ -343,12 +386,14 @@ export default class StateManager {
       const pauseBackground2D = stateManager.get('pauseBackground2D')
 
       if (pauseBackground2D !== null) {
-        pauseBackground2D.dispose()
-        stateManager.set('pauseBackground2D', null)
+        // pauseBackground2D.dispose()
+        // stateManager.set('pauseBackground2D', null)
+        pauseBackground2D.levelVisible = false
       }
 
       return ('state.endPause: resolved')
     }
+
     this.registerAwakeningFunction(this.R.get.states_pause, awakePause)
     this.registerEndingFunction(this.R.get.states_pause, endPause)
 
@@ -481,7 +526,6 @@ export default class StateManager {
     event.handled = true
 
     debuglog('StateManager.stateHasFinishedHandlingEvent: event was handled.')
-    debuglog(event)
 
     if (this._dataManager.constructor === DataManager) {
       this.storeEvent(event)

@@ -42,8 +42,17 @@
   document.addEventListener('DOMContentLoaded', () => {
     const taskObject = new TaskObject(document.getElementsByClassName('task-canvas'))
 
+    /* Create a custom scene by making a scene generator function */
     const sceneGenerator = function (options) {
-      const taskObject = this.taskObject
+      /**
+       * As it is the case for all functions called by the framework
+       * they are passed down a custom context through 'this'
+       * @see context
+       */
+      const context = this
+
+      const taskObject = context.taskObject
+      const R = context.R
 
       const optionsBase = {
         sceneKey: 'main',
@@ -62,6 +71,7 @@
 
       const texture = taskObject.cloneAssetIntoScene(taskObject.R.get.textures_logo2, scene)
       const heldenklage = taskObject.cloneAssetIntoScene(taskObject.R.get.sounds_heldenklage, scene)
+      scene.stateManager.set('music', heldenklage)
 
       texture.hasAlpha = true
       const height = math.max(taskObject.renderSize.height * 0.05, 45)
@@ -73,14 +83,28 @@
         origin: BABYLON.Vector2.Zero(),
       })
 
-      scene.stateManager.states.active.addAwakeningFunctions(() => {
-        heldenklage.setVolume(1)
-        heldenklage.play()
+      scene.stateManager.states.active.addAwakeningFunctions(function awaken() {
+        const music = this.stateManager.get('music')
+        music.pause()
+        music.setVolume(1)
+        music.play()
+
+        this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes' })
       })
 
-      scene.stateManager.states.active.addEndingFunctions(() => {
-        TaskObject.fadeOut(heldenklage, { currentVolume: 0.5, step: 0.2, threshold: 0.08, delayInMs: 100 })
+      scene.stateManager.states.active.addEndingFunctions(function ending() {
+        /*
+         * NOTE be carefull not to use arrow functions for state functions () => {}
+         * their 'this' will be the one of the parent environment and not the passed down context
+         */
+        const music = this.stateManager.get('music')
+        TaskObject.fadeOut(music, { currentVolume: 0.5, step: 0.2, threshold: 0.08, delayInMs: 100, pause: true })
       })
+
+      scene.stateManager.states.active.addEventFunctions(R.get.events_modalDismissed, () => { console.log('Main scene modal was dismissed') })
+
+      /* Generate a default pause menu and link it to spacebar stroke */
+      scene.stateManager.setPauseKeyStroke()
 
 
       return scene

@@ -140,7 +140,7 @@ export default class TaskObject {
     this.setupGlobalEvents()
 
     /* --- Modals --- */
-    this._currentModal = this.MODAL_INTRODUCTION
+    this.currentModal = null
 
     /* --- Task parameters --- */
     this.parameters = {}
@@ -255,10 +255,10 @@ export default class TaskObject {
 
     options = _.extend(optionsBase, options)
 
-  /* --- Create a basic 2D scene using a Canvas2D as background --- */
+    /* --- Create a basic 2D scene using a Canvas2D as background --- */
     const scene = taskObject.create2DScene(options)
 
- // /* --- Load assets --- */
+    /* --- Load assets --- */
     let assetObject = {
       logo: {
         path: '/assets/experiment-js.svg',
@@ -271,7 +271,7 @@ export default class TaskObject {
       assetObject = _.extend(assetObject, taskObject.assetsToLoad)
     }
 
- // add content loaded text
+    // add content loaded text
     scene.loadingPromise = taskObject.loadAssets(assetObject, scene)
     .then(() => {
       const canvas = scene.initialCanvas
@@ -502,6 +502,7 @@ export default class TaskObject {
         pause: 'pause',
         wasHandled: 'was_handled',
         beingHandled: 'being_handled',
+        modalDismissed: 'modalDismissed',
       },
     })
 
@@ -740,6 +741,9 @@ export default class TaskObject {
     scene.initialCanvas = canvas
     scene.initialCamera = camera
 
+    /* Create a GUI canvas */
+    scene.initialGui = scene.stateManager.addGuiCanvas()
+
     /* ======= Debug mode ======= */
     if ((typeof window.DEBUG_MODE_ONE !== 'undefined') && (window.DEBUG_MODE_ONE === true)) {
       // canvas.createCanvasProfileInfoCanvas()
@@ -849,17 +853,6 @@ export default class TaskObject {
 
   set currentScene(sceneKey) {
     if (Object.keys(this.scenes).indexOf(sceneKey) !== -1) {
-      this.scenes[sceneKey].stateManager.goToState(this.R.get.states_active)
-
-      /* ======= Debug mode ======= */
-      if ((typeof window.DEBUG_MODE_ONE !== 'undefined') && (window.DEBUG_MODE_ONE === true) && (this.shouldShowDebug)) {
-        this.scenes[sceneKey].debugLayer.show()
-
-        if (typeof this.scenes[sceneKey].initialCanvas !== 'undefined') {
-          // this.scenes[sceneKey].initialCanvas.createCanvasProfileInfoCanvas()
-        }
-      }
-
       if (this._currentSceneKey) {
         this.scenes[this._currentSceneKey].stateManager.goToState(this.R.get.states_idle)
 
@@ -875,6 +868,17 @@ export default class TaskObject {
       }
 
       this._currentSceneKey = sceneKey
+
+      this.scenes[sceneKey].stateManager.goToState(this.R.get.states_active)
+
+      /* ======= Debug mode ======= */
+      if ((typeof window.DEBUG_MODE_ONE !== 'undefined') && (window.DEBUG_MODE_ONE === true) && (this.shouldShowDebug)) {
+        this.scenes[sceneKey].debugLayer.show()
+
+        if (typeof this.scenes[sceneKey].initialCanvas !== 'undefined') {
+          // this.scenes[sceneKey].initialCanvas.createCanvasProfileInfoCanvas()
+        }
+      }
 
       debuglog(`TaskObject.currentScene: changed to ${sceneKey}`)
     } else if (sceneKey === null || sceneKey === '') {
@@ -978,63 +982,30 @@ export default class TaskObject {
   }
 
   /* =============== Utility Functions =============== */
-  /* ======== Modal Methods ======== */
-  /**
-   * Creates a new information modal with specified data.
-   * @param  {Array}
-   */
-  newInfoModal(modalData = mandatory()) {
-    this._currentModal = modalData
-    const thisObject = this
-    const modalBox = new SmartModal('centralSmall', () => {
-      thisObject.infoModalDismissed()
-    })
-    modalBox.title = modalData[0]
-    modalBox.content = modalData[1]
-
-    this.infoModal = modalBox
-  }
 
   /**
-   * Function called when infoModal are dismissed. It checks if an action is necessary and execute it. It then destroys the infoModal.
+   * modal - Creates a new information modal with specified data.
+   *
+   * @param {!object} options
+   *
+   * @returns {type} Description
    */
-  infoModalDismissed() {
-    if (this._currentModal) {
-      // replace by keyed object for comprehension
-      const modalAction = this._currentModal[2]
-      switch (modalAction[0]) {
-        case 'MDASTARTTASK':
-        /**
-         * Start the task
-         */
-          modalAction[1]()
-          break
-        default:
-          throw new Error('infoModalDismissed: Action unknown')
-      }
-    } else {
-      throw new Error('infoModal not defined')
-    }
+  modal({ type = 'centralSmall', title = '', content = '', event = new EventData(this.R.get.events_modalDismissed) }) {
+    this.currentModal = { data: { type, title, content, event } }
 
-    this.removeInfoModal()
+    const modalBox = new SmartModal(type, function dismissed() {
+      if ((event.constructor === EventData) && (this.stateManager !== null)) {
+        this.stateManager.addEvent(event)
+        this.taskObject.currentModal = null
+      }
+    }.bind(this.context))
+
+    modalBox.title = title
+    modalBox.content = content
+
+    this.currentModal.modalBox = modalBox
   }
 
-  removeInfoModal() {
-    if (this.infoModal) {
-      switch (this.infoModal.constructor.name) {
-        case 'SmartModal':
-        // might do something specific ?
-          break
-        default:
-          throw new Error('Invalid infoModal type')
-      }
-    } else {
-      throw new Error("Can't remove InfoModal, infoModal not set")
-    }
-
-    this.infoModal = null
-    this._currentModal = null
-  }
 
   /* === Animation helpers === */
   animateFloat(object, property, from, to) {
@@ -1364,10 +1335,11 @@ export default class TaskObject {
    * @param {number}    [options.step=0.02]          decrement step such as volume -= step * volume
    * @param {number}    [options.threshold=0.02]     threshold at which the sound is stopped
    * @param {number}    [options.delayInMs=50]       duration of each recursion
+   * @param {boolean}   [options.pause=false]        if setto true the sound is pauses, if false, it is stopped
    *
    * @returns {undefined}
    */
-  static fadeOut(sound, { currentVolume = null, step = 0.02, threshold = 0.02, delayInMs = 50 } = {}) {
+  static fadeOut(sound, { currentVolume = null, step = 0.02, threshold = 0.02, delayInMs = 50, pause = false } = {}) {
     mustHaveConstructor(BABYLON.Sound, sound)
 
     if (currentVolume === null) {
@@ -1386,12 +1358,17 @@ export default class TaskObject {
     if (currentVolume > threshold) {
       debuglog(`fadeOut.currentVolume:${currentVolume}`)
       sound.setVolume(currentVolume)
-      delay(delayInMs).then(() => TaskObject.fadeOut(sound, { currentVolume, step, threshold, delayInMs }))
+      delay(delayInMs).then(() => TaskObject.fadeOut(sound, { currentVolume, step, threshold, delayInMs, pause }))
+    } else if (pause) {
+      debuglog('fadeOut:  pause')
+      sound.pause()
     } else {
-      debuglog('fadeOut: stop')
+      debuglog('fadeOut:  stop')
       sound.stop()
     }
   }
+
+
   /**
    * Returns an array filled with len elements of value
    * @param  {object} value any value

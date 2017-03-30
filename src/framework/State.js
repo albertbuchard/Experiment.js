@@ -106,21 +106,23 @@ export default class State {
    * All functions of the _endingFunctions array will be called, they must return a Promise.
    */
   end() {
-    const calledFunctions = []
-    for (let i = 0; i < this._endingFunctions.length; i++) {
-      calledFunctions[i] = Promise.method(this._endingFunctions[i].bind(this.context))()
-    }
+    if (this._frozenAt === null) {
+      const calledFunctions = []
+      for (let i = 0; i < this._endingFunctions.length; i++) {
+        calledFunctions[i] = Promise.method(this._endingFunctions[i].bind(this.context))()
+      }
 
-    Promise.all(calledFunctions).then((data) => {
+      Promise.all(calledFunctions).then((data) => {
       /* Promise ran as expected, returned data */
-      debuglog('State: Ending functions completed as expected.', calledFunctions)
-      debuglog(`${this.stateKey} ended.`)
-      return data
-    }).catch((error) => {
+        debuglog('State: Ending functions completed as expected.', calledFunctions)
+        debuglog(`${this.stateKey} ended.`)
+        return data
+      }).catch((error) => {
       /* an error occured */
-      debugError(error)
-      return null
-    })
+        debugError(error)
+        return null
+      })
+    }
   }
 
   update() {
