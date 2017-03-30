@@ -286,13 +286,15 @@ export default class StateManager {
       }
       const stateManager = this.stateManager
 
-      let pauseBackground2D = stateManager.get('pauseBackground2D')
-      const elements2D = stateManager.get('elements2D')
-      const canvas = elements2D.canvas
+      const pauseBackground2D = stateManager.get('pauseBackground2D')
 
       if (pauseBackground2D !== null) {
         pauseBackground2D.opacity = 1
       } else {
+        const canvas = this.scene.initialCanvas
+        if (typeof canvas === 'undefined') {
+          return ('awakePause: initialCanvas is undefined.')
+        }
         // draw a rect2d of canvas size with background opacity 0.5
         // draw a large text2d "PAUSE" inside
         const baseOptions = {
@@ -304,30 +306,34 @@ export default class StateManager {
           height: canvas.height,
           fill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.3, 0.3, 0.3, 0.5)),
           fontName: '60pt Verdana',
+          backgroundRoundRadius: 0,
         }
 
         options = _.extend(baseOptions, options)
 
-        // var canvas = elements2D.canvas;
+        let customSized = null
+        if ((options.width !== canvas.width) || (options.height !== canvas.height)) {
+          customSized = new BABYLON.Size(options.width, options.height)
+        }
 
-        // create button and add to canvas
-        pauseBackground2D = new BABYLON.Rectangle2D({
-          parent: canvas,
+        const canvasOptions = {
           id: options.id,
-          x: options.x,
-          y: options.y,
-          width: options.width,
-          height: options.height,
+          backgroundFill: options.fill,
+          backgroundRoundRadius: options.backgroundRoundRadius,
           fill: options.fill,
-          roundRadius: 0,
+          x: (canvas.width / 2) - ((options.width) / 2),
+          y: (canvas.height / 2) - ((options.height) / 2),
+          designSize: customSized,
+          zOrder: 0,
           children: [
             new BABYLON.Text2D(options.text, {
               fontName: options.fontName,
-              marginVAlignment: 'v: top',
-              marginHAlignment: 3,
+              marginAlignment: 'h: center, v:bottom',
             }),
           ],
-        })
+        }
+
+        const pauseBackground2D = new BABYLON.ScreenSpaceCanvas2D(this.scene, canvasOptions)
 
         stateManager.set('pauseBackground2D', pauseBackground2D) // TODO Make those string part of R.
       }

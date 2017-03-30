@@ -1364,10 +1364,11 @@ export default class TaskObject {
    * @param {number}    [options.step=0.02]          decrement step such as volume -= step * volume
    * @param {number}    [options.threshold=0.02]     threshold at which the sound is stopped
    * @param {number}    [options.delayInMs=50]       duration of each recursion
+   * @param {boolean}   [options.pause=false]        if setto true the sound is pauses, if false, it is stopped
    *
    * @returns {undefined}
    */
-  static fadeOut(sound, { currentVolume = null, step = 0.02, threshold = 0.02, delayInMs = 50 } = {}) {
+  static fadeOut(sound, { currentVolume = null, step = 0.02, threshold = 0.02, delayInMs = 50, pause = false } = {}) {
     mustHaveConstructor(BABYLON.Sound, sound)
 
     if (currentVolume === null) {
@@ -1386,9 +1387,12 @@ export default class TaskObject {
     if (currentVolume > threshold) {
       debuglog(`fadeOut.currentVolume:${currentVolume}`)
       sound.setVolume(currentVolume)
-      delay(delayInMs).then(() => TaskObject.fadeOut(sound, { currentVolume, step, threshold, delayInMs }))
+      delay(delayInMs).then(() => TaskObject.fadeOut(sound, { currentVolume, step, threshold, delayInMs, pause }))
+    } else if (pause) {
+      debuglog('fadeOut:  pause')
+      sound.pause()
     } else {
-      debuglog('fadeOut: stop')
+      debuglog('fadeOut:  stop')
       sound.stop()
     }
   }

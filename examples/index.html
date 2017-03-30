@@ -62,6 +62,7 @@
 
       const texture = taskObject.cloneAssetIntoScene(taskObject.R.get.textures_logo2, scene)
       const heldenklage = taskObject.cloneAssetIntoScene(taskObject.R.get.sounds_heldenklage, scene)
+      scene.stateManager.set('music', heldenklage)
 
       texture.hasAlpha = true
       const height = math.max(taskObject.renderSize.height * 0.05, 45)
@@ -73,16 +74,19 @@
         origin: BABYLON.Vector2.Zero(),
       })
 
-      scene.stateManager.states.active.addAwakeningFunctions(() => {
-        heldenklage.setVolume(1)
-        heldenklage.play()
+      scene.stateManager.states.active.addAwakeningFunctions(function awaken() {
+        const music = this.stateManager.get('music')
+        music.pause()
+        music.setVolume(1)
+        music.play()
       })
 
-      scene.stateManager.states.active.addEndingFunctions(() => {
-        TaskObject.fadeOut(heldenklage, { currentVolume: 0.5, step: 0.2, threshold: 0.08, delayInMs: 100 })
+      scene.stateManager.states.active.addEndingFunctions(function ending() {
+        const music = this.stateManager.get('music')
+        TaskObject.fadeOut(music, { currentVolume: 0.5, step: 0.2, threshold: 0.08, delayInMs: 100, pause: true })
       })
 
-
+      scene.stateManager.setPauseKeyStroke()
       return scene
     }
 
