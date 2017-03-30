@@ -5,13 +5,13 @@ import { mandatory } from './utilities'
 /** Class storing all types of event to be handled by a StateManager*/
 export default class EventData {
   /**
-   * Maybe make a class out of this...
+   *
    * @param {string} flag      flag describing the input type
-   * @param {number} timeStamp real time of input
+   * @param {number} happenedAt real time of input
    */
-  constructor(flag = mandatory('flag'), timeStamp = EventData.timeInMs, data = null) {
+  constructor(flag = mandatory('flag'), happenedAt = EventData.timeInMs, data = null) { // TODO destructure it ?
     this.flag = flag
-    this.happenedAt = timeStamp
+    this.happenedAt = happenedAt
 
     /**
      * Wether the event was already handled by the state handleEvent function.
