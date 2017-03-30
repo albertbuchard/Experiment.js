@@ -9,7 +9,7 @@ export default class EventData {
    * @param {string} flag      flag describing the input type
    * @param {number} timeStamp real time of input
    */
-  constructor(flag = mandatory('flag'), timeStamp = mandatory('timeStamp'), data = null) {
+  constructor(flag = mandatory('flag'), timeStamp = EventData.timeInMs, data = null) {
     this.flag = flag
     this.happenedAt = timeStamp
 
@@ -32,5 +32,9 @@ export default class EventData {
     }
 
     this.data = _.extend(baseData, data)
+  }
+
+  static get timeInMs() {
+    return new Date().getTime()
   }
 }
