@@ -269,6 +269,13 @@ function diag(matrixObject = mandatory(), setTo = null): Array {
   return ([diagonalValues, matrixObject])
 }
 
+/* ======= Number functions ======= */
+Number.prototype.boundTo = function boundTo(min = mandatory(), max = mandatory()) {
+  mustHaveConstructor(Number, min, max)
+  return Math.max(Math.min(this, max), min)
+}
+
+
 /* =============== String functions =============== */
 
 /**
@@ -536,6 +543,7 @@ Array.prototype.includes = function includes(array) {
 export {
   Array,
   String,
+  Number,
   diag,
   rowSum,
   getRow,

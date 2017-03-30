@@ -36,7 +36,7 @@
   }
   </style>
   <script>
-  /* global TaskObject BABYLON ParamBox _ */
+  /* global TaskObject BABYLON ParamBox delay _ fadeout DEBUG_MODE_ON */
   console.log(TaskObject, BABYLON)
   DEBUG_MODE_ON = false
 
@@ -62,6 +62,8 @@
       const scene = taskObject.create2DScene(options)
 
       const texture = taskObject.cloneAssetIntoScene(taskObject.R.get.textures_logo2, scene)
+      const heldenklage = taskObject.cloneAssetIntoScene(taskObject.R.get.sounds_heldenklage, scene)
+
       texture.hasAlpha = true
       const height = math.max(taskObject.renderSize.height * 0.05, 45)
       const logo = new BABYLON.Sprite2D(texture, {
@@ -72,6 +74,16 @@
         origin: BABYLON.Vector2.Zero(),
       })
 
+      scene.stateManager.states.active.addAwakeningFunctions(() => {
+        heldenklage.setVolume(1)
+        heldenklage.play()
+      })
+
+      scene.stateManager.states.active.addEndingFunctions(() => {
+        TaskObject.fadeOut(heldenklage, { currentVolume: 0.5, step: 0.2, threshold: 0.08, delayInMs: 100 })
+      })
+
+
       return scene
     }
 
@@ -81,6 +93,10 @@
       logo2: {
         path: '/assets/experiment-js-light.svg',
         type: 'texture',
+      },
+      heldenklage: {
+        path: '/assets/sounds/nietzscheHeldenklage.mp3',
+        type: 'sound',
       },
     }
 

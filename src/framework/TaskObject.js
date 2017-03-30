@@ -13,6 +13,7 @@ import BABYLON from 'experiment-babylon-js'
 
 import { ParamBox, SmartModal } from 'experiment-boxes'
 import Promise from 'bluebird'
+import math from 'experiment-mathjs'
 
 import DataManager from './DataManager'
 import RessourceManager from './RessourceManager'
@@ -27,6 +28,8 @@ import {
   mandatory,
   debuglog,
   debugWarn,
+  mustHaveConstructor,
+  delay,
 } from './utilities'
 
 
@@ -329,6 +332,7 @@ export default class TaskObject {
     }
 
     const textureFormats = ['png', 'bmp', 'jpg', 'tiff', 'svg']
+    const soundFormats = ['wav', 'mp3', 'flac', 'aac', 'mp4', 'ogg']
 
     const assetManager = new BABYLON.AssetsManager(scene)
     const R = this.R
@@ -345,6 +349,8 @@ export default class TaskObject {
 
         if (textureFormats.indexOf(R.getFormat(path)) !== -1) {
           type = 'texture'
+        } else if (soundFormats.indexOf(R.getFormat(path)) !== -1) {
+          type = 'sound'
         } else {
           console.warn('TaskObject.loadAssets: asset invalid or not implement with shorthand function')
           type = 'invalid'
@@ -368,7 +374,19 @@ export default class TaskObject {
         }.bind({
           textureName: names[i],
         })
+      } else if (type === 'sound') {
+        const assetManagerTask = assetManager.addBinaryFileTask(`${names[i]}Task`, path)
+        assetManagerTask.onSuccess = function (task) {
+          R.add({
+            sounds: {
+              [this.soundName]: new BABYLON.Sound(this.soundName, task.data, scene),
+            },
+          })
+        }.bind({
+          soundName: names[i],
+        })
       }
+      // TODO all the rest such as Meshes.. what else ?
     }
 
     /* --- Create a Deferred promise that will resolve after loading is complete --- */
@@ -642,19 +660,31 @@ export default class TaskObject {
     }
   }
 
-  create2DScene(options = mandatory()) {
-    /*
-      Babylon Scene objects are enriched in experiment-js with:
-        * sceneKey
-        * parentTaskObject
-        * stateManager
-        * dataManager
-        * initialCanvas
-        * initialCamera
-        * updateContentFrame
-      Importantly - The registerBeforeRender() lifecycle function calls the update function of the stateManager
-     */
 
+  /**
+   * create2DScene - 2D Scene generator with an initialCanvas of the specifified size
+   * Babylon Scene objects are enriched in experiment-js with:
+   *  - sceneKey
+   *  - parentTaskObject
+   *  - stateManager
+   *  - dataManager
+   *  - initialCanvas
+   *  - initialCamera
+   *  - updateContentFrame
+   * Importantly - The registerBeforeRender() lifecycle function calls the update function of the stateManager
+   *
+   * @param {object} [options] Object with key-value options for the 2D scene, defaults are :
+   *  - sceneKey: `scene${Math.random() * 100000}`,
+   *  - canvasBackground: new BABYLON.Color4(0, 0, 0, 1),
+   *  - backgroundRoundRadius: 50,
+   *  - clearColor: new BABYLON.Color4(0, 0, 0, 1),
+   *  - canvasPercentWidth: 0.8,
+   *  - canvasPercentHeight: 1,
+   *
+   *
+   * @returns {BABYLON.Scene}
+   */
+  create2DScene(options = mandatory()) {
     const optionsBase = {
       sceneKey: `scene${Math.random() * 100000}`,
       canvasBackground: new BABYLON.Color4(0, 0, 0, 1),
@@ -725,6 +755,7 @@ export default class TaskObject {
       //   this.initialCanvas.y = (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2)
       // }
     }
+
 
     scene.updateContentFrame = updateContentFrame
 
@@ -1322,6 +1353,45 @@ export default class TaskObject {
     return Math.abs(angleA - angleB) > Math.PI
   }
 
+  /* === Sound function === */
+  /**
+   * fadeOut - Performs a fadeOut of a BABYLON.Sound recursively. When the decrement
+   * become smaller than step/10, decrement is fixed at step/10.
+   *
+   * @param {BABYLON.Sound}      sound                        a sound to fade out and stop
+   * @param {object}    options                      second argument holds options
+   * @param {?Number}   [options.currentVolume=null] start volume for the fadeout
+   * @param {number}    [options.step=0.02]          decrement step such as volume -= step * volume
+   * @param {number}    [options.threshold=0.02]     threshold at which the sound is stopped
+   * @param {number}    [options.delayInMs=50]       duration of each recursion
+   *
+   * @returns {undefined}
+   */
+  static fadeOut(sound, { currentVolume = null, step = 0.02, threshold = 0.02, delayInMs = 50 } = {}) {
+    mustHaveConstructor(BABYLON.Sound, sound)
+
+    if (currentVolume === null) {
+      currentVolume = sound.getVolume()
+    }
+    mustHaveConstructor(Number, currentVolume, step, threshold)
+
+    currentVolume = currentVolume.boundTo(0, 1)
+    step = step.boundTo(0, 1)
+
+    let decrement = step * currentVolume
+    if (decrement < step / 10) {
+      decrement = step / 10
+    }
+    currentVolume -= decrement
+    if (currentVolume > threshold) {
+      debuglog(`fadeOut.currentVolume:${currentVolume}`)
+      sound.setVolume(currentVolume)
+      delay(delayInMs).then(() => TaskObject.fadeOut(sound, { currentVolume, step, threshold, delayInMs }))
+    } else {
+      debuglog('fadeOut: stop')
+      sound.stop()
+    }
+  }
   /**
    * Returns an array filled with len elements of value
    * @param  {object} value any value

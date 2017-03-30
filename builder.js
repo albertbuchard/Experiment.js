@@ -22,6 +22,7 @@
  import {
    Array,
    String,
+   Number,
    diag,
    rowSum,
    getRow,
@@ -66,6 +67,7 @@
   RessourceManager,
   Array,
   String,
+  Number,
   diag,
   rowSum,
   getRow,
