@@ -91,7 +91,7 @@ export default class DataManager {
    */
   addTable(name = mandatory(), fields = mandatory()) {
     if (_.has(this.dataTables, name)) {
-      throw new Error(`DataManager: Data table with name '${name}' already exists`)
+      throw new Error(`DataManager.addTable: Data table with name '${name}' already exists`)
     }
 
     /* --- Create the dataTable object and define the fields --- */
@@ -136,9 +136,9 @@ export default class DataManager {
       }
 
       const nrows = (typeof rows.length === 'undefined') ? 1 : rows.length
-      debuglog(`DataManager: added ${nrows} rows to ${name} data table.`)
+      debuglog(`DataManager.addRows: added ${nrows} rows to ${name} data table.`)
     } else {
-      throw new Error('DataManager: Row is of invalid format.')
+      throw new Error('DataManager.addRows: Row is of invalid format.')
     }
   }
 
@@ -150,11 +150,11 @@ export default class DataManager {
    */
   generateIds(name = mandatory(), numberOfIds = 1) {
     if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager: Data table with name '${name}' does not exists`)
+      throw new Error(`DataManager.generateIds: Data table with name '${name}' does not exists`)
     }
 
     if (!(_.has(this.dataTables[name], 'id'))) {
-      throw new Error(`DataManager: Data table with name '${name}' does not have an 'id' field`)
+      throw new Error(`DataManager.generateIds: Data table with name '${name}' does not have an 'id' field`)
     }
 
     let startId = 0
@@ -173,7 +173,7 @@ export default class DataManager {
    */
   getEmptyRow(name = mandatory()) {
     if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager: Data table with name '${name}' does not exists`)
+      throw new Error(`DataManager.getEmptyRow: Data table with name '${name}' does not exists`)
     }
 
     const emptyTable = {}
@@ -194,7 +194,7 @@ export default class DataManager {
    */
   isValidRows(name = mandatory(), rows = mandatory()) {
     if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager: Data table with name '${name}' does not exists`)
+      throw new Error(`DataManager.isValidRows: Data table with name '${name}' does not exists`)
     }
 
     if (typeof rows !== 'object') {
@@ -221,7 +221,7 @@ export default class DataManager {
         }
       } else if ((columnNamesDataTable[i] !== 'id') && (!this.automaticID)) {
         /* check if the column it did not find was the id column - if automaticID is set to true row is still valid */
-        debugError(`DataManager: Invalid row, does not contain column ${columnNamesDataTable[i]} of dataTable${name}`)
+        debugError(`DataManager.isValidRows: Invalid row, does not contain column ${columnNamesDataTable[i]} of dataTable${name}`)
         return (false)
       }
     }
@@ -234,7 +234,7 @@ export default class DataManager {
   /* ======== Export formats ======== */
   toCsv(name = mandatory()) {
     if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager: Data table with name '${name}' does not exists`)
+      throw new Error(`DataManager.toCsv: Data table with name '${name}' does not exists`)
     }
 
     const columnNamesDataTable = _.keys(this.dataTables[name])
@@ -256,7 +256,7 @@ export default class DataManager {
 
   toDataArray(name = mandatory()) {
     if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager: Data table with name '${name}' does not exists`)
+      throw new Error(`DataManager.toDataArray: Data table with name '${name}' does not exists`)
     }
 
     const columnNamesDataTable = _.keys(this.dataTables[name])
@@ -272,16 +272,16 @@ export default class DataManager {
   toJSON(name = null) {
     if (name) {
       if (!(_.has(this.dataTables, name))) {
-        throw new Error(`DataManager: Data table with name '${name}' does not exists`)
+        throw new Error(`DataManager.toJSON: Data table with name '${name}' does not exists`)
       }
 
-      JSON.stringify(this.dataTables[name])
-    } else {
-      JSON.stringify(this.dataTables)
+      return JSON.stringify(this.dataTables[name])
     }
+    return JSON.stringify(this.dataTables)
   }
 
-  saveData() {
+  saveData() { // TODO
+    // Depends the save mode : API (Needs web) // File system (Electron/Node/Meteor) // Database (Electron/Node/Meteor)
     /* Check if context is node-webkit (native app) */
     if (typeof require === 'function') {
       /* node-webkit can be used */
@@ -294,6 +294,12 @@ export default class DataManager {
     } else if (this.restURL) {
         // $.ajax();
     }
+  }
+
+  sendData() { // TODO
+    // Websocket (like hackathon)
+    // TTL
+    // Post or get HTTP
   }
 
   /* ======== Getters and setters ======== */

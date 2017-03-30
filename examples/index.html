@@ -52,6 +52,7 @@
       const context = this
 
       const taskObject = context.taskObject
+      const R = context.R
 
       const optionsBase = {
         sceneKey: 'main',
@@ -87,6 +88,8 @@
         music.pause()
         music.setVolume(1)
         music.play()
+
+        this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes' })
       })
 
       scene.stateManager.states.active.addEndingFunctions(function ending() {
@@ -97,6 +100,8 @@
         const music = this.stateManager.get('music')
         TaskObject.fadeOut(music, { currentVolume: 0.5, step: 0.2, threshold: 0.08, delayInMs: 100, pause: true })
       })
+
+      scene.stateManager.states.active.addEventFunctions(R.get.events_modalDismissed, () => { console.log('Main scene modal was dismissed') })
 
       /* Generate a default pause menu and link it to spacebar stroke */
       scene.stateManager.setPauseKeyStroke()

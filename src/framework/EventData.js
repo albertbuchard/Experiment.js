@@ -16,7 +16,7 @@ export default class EventData {
 
     /* --- Set data and happenedAt --- */
     const baseData = {
-      belongsTo: 'globalLog', // could be an array of strings
+      belongsTo: ['globalLog'], // could be an array of strings
       handledAt: null,
       storedAt: null,
     }
