@@ -342,7 +342,7 @@ export default class StateManager {
           width: canvas.width,
           height: canvas.height,
           fill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.3, 0.3, 0.3, 0.5)),
-          fontName: '60pt Verdana',
+          fontName: '40pt Verdana',
           backgroundRoundRadius: 0,
         }
 
@@ -365,7 +365,9 @@ export default class StateManager {
           children: [
             new BABYLON.Text2D(options.text, {
               fontName: options.fontName,
-              marginAlignment: 'h: center, v:bottom',
+              marginAlignment: 'h: center, v:top',
+              fontSignedDistanceField: true,
+              zOrder: 0,
             }),
           ],
         }
