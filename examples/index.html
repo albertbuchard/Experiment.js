@@ -42,8 +42,16 @@
   document.addEventListener('DOMContentLoaded', () => {
     const taskObject = new TaskObject(document.getElementsByClassName('task-canvas'))
 
+    /* Create a custom scene by making a scene generator function */
     const sceneGenerator = function (options) {
-      const taskObject = this.taskObject
+      /**
+       * As it is the case for all functions called by the framework
+       * they are passed down a custom context through 'this'
+       * @see context
+       */
+      const context = this
+
+      const taskObject = context.taskObject
 
       const optionsBase = {
         sceneKey: 'main',
@@ -82,11 +90,18 @@
       })
 
       scene.stateManager.states.active.addEndingFunctions(function ending() {
+        /*
+         * NOTE be carefull not to use arrow functions for state functions () => {}
+         * their 'this' will be the one of the parent environment and not the passed down context
+         */
         const music = this.stateManager.get('music')
         TaskObject.fadeOut(music, { currentVolume: 0.5, step: 0.2, threshold: 0.08, delayInMs: 100, pause: true })
       })
 
+      /* Generate a default pause menu and link it to spacebar stroke */
       scene.stateManager.setPauseKeyStroke()
+
+
       return scene
     }
 
