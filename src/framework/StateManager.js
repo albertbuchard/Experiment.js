@@ -239,7 +239,7 @@ export default class StateManager {
       backgroundRoundRadius: 0,
       x: 0,
       y: 0,
-      zOrder: -1,
+      zOrder: 1,
     }
 
     const GUI = new BABYLON.ScreenSpaceCanvas2D(scene, canvasOptions)
