@@ -68,7 +68,7 @@ export default class TaskObject {
     /* --- Setup engine --- */
     if (engine === 'babylon') {
       // Start BabylonJS engine
-      this.engine = new BABYLON.Engine(this.canvas, false, null, false)
+      this.engine = new BABYLON.Engine(this.canvas, false, null, false) // TODO check hardware for retina
     } else {
       throw new Error('TaskObject.constructor: engine not supported.')
     }

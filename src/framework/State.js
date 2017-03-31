@@ -79,7 +79,16 @@ export default class State {
    * Function called at state awakening.
    * All functions of the _awakeningFunctions array will be called, they must return a Promise.
    */
-  awake() {
+  awake(reload = false) {
+    if (reload) {
+      if (this._frozenAt !== null) {
+        this._frozenAt = null
+        this._frozenEvents = []
+        this.stateManager.stateWasUnfreezed(this.stateKey)
+      }
+      // NOTE Might have other things to do here...
+    }
+
     /* --- If state was frozen unfreeze it but do not re-awake --- */
     if (this._frozenAt !== null) {
       this.unfreeze()

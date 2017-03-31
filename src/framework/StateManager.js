@@ -207,12 +207,12 @@ export default class StateManager {
   }
 
   /* === State change === */
-  goToState(key = mandatory()) {
+  goToState(key = mandatory(), reload = false) {
     if (_.has(this.states, key)) {
       this.currentState.end()
 
       this._currentStateKey = key
-      this.states[key].awake()
+      this.states[key].awake(reload)
     } else {
       throw new Error('StateManager: Invalid state key.')
     }
