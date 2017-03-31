@@ -363,6 +363,23 @@ Array.prototype.max = function max() {
   return NaN
 }
 
+
+/**
+ * multisplice - from http://upshots.org/actionscript/javascript-splice-array-on-multiple-indices-multisplice
+ * With some es6 magic
+ *
+ * @returns {Array}
+ */
+Array.prototype.multisplice = function (...args) {
+  args.sort((a, b) => a - b)
+  const spliced = []
+  for (let i = 0; i < args.length; i++) {
+    const index = args[i] - i
+    spliced.push(this.splice(index, 1)[0])
+  }
+  return spliced
+}
+
 /**
  * Return an array of objects with x and y property. Y is taken as the values of the array, and x is either the index if null, or the values of the specified array.
  * @param  {?array} x X values, if null, the index is taken as x

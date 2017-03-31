@@ -500,11 +500,27 @@ export default class StateManager {
     this._eventHeap = _.without(this._eventHeap, event)
   }
 
-  getFirstEventAndRemoveFromHeap() {
-    const event = this.firstEvent
-    this.removeFirstEvent()
+  getFirstEventAndRemoveFromHeap(byState = this.currentStateKey) {
+    for (let i = 0; i < this._eventHeap.length; i++) {
+      const event = this._eventHeap[i]
+      if ((event.forState === 'any') || (event.forState === byState)) {
+        return this._eventHeap.splice(i)
+      }
+    }
 
-    return (event)
+    return undefined
+  }
+
+  spliceEventsForState(byState = this.currentStateKey) {
+    const toSplice = []
+    for (let i = 0; i < this._eventHeap.length; i++) {
+      const event = this._eventHeap[i]
+      if ((event.forState === 'any') || (event.forState === byState)) {
+        toSplice.push(i)
+      }
+    }
+
+    return this._eventHeap.multisplice(...toSplice)
   }
 
   emptyEventHeap() {

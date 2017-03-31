@@ -36,6 +36,12 @@ export default class EventData {
     }
 
 
+    this.forState = 'any'
+    if (this.data.hasOwnProperty('forState')) {
+      this.forState = this.data.forState
+    }
+
+
     /**
      * Wether the event was already handled by the state handleEvent function.
      * @type {Boolean}
