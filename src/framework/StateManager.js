@@ -469,7 +469,7 @@ export default class StateManager {
       storedAt: null,
     }
     if (data !== null) {
-      eventOptions.data = data
+      eventOptions.data = data // TODO ++++ SHOULD BE _.extend()
     }
 
     /* --- Not a time triggered event --- */
@@ -720,16 +720,19 @@ export default class StateManager {
    * @param  {string} name String name of the variable
    * @return {?*}
    */
-  getGlobal(name = mandatory()) {
-    if (_.has(this.globals, name)) {
+  getGlobal(name = mandatory(), setDefault) {
+    if (this.globals.hasOwnProperty(name)) {
       return (this.globals[name])
+    } else if (typeof setDefault !== 'undefined') {
+      this.globals[name] = setDefault
+      return this.globals[name]
     }
-    debugWarn(`StateManager: globals do not contain variable '${name}'`)
+    debugWarn(`StateManager: globals do not contain variable '${name}' - and no default is given`)
     return (null)
   }
 
-  get(name = mandatory()) {
-    return (this.getGlobal(name))
+  get(name = mandatory(), setDefault) {
+    return (this.getGlobal(name, setDefault))
   }
 
   /**
