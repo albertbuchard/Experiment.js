@@ -520,7 +520,7 @@ export default class StateManager {
       }
     }
 
-    return this._eventHeap.multisplice(...toSplice)
+    return this._eventHeap.multisplice(...toSplice) // TODO use only one loop. And put events in a freezer if too long on the heap.
   }
 
   emptyEventHeap() {

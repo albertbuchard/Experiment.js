@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Experiment[js].exampleOne</title>
+  <script src="../node_modules/jquery/dist/jquery.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+  <script src="../node_modules/experiment-mathjs/dist/math.js"></script>
+  <!-- <script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script> -->
+  <!-- <script src="http://cdn.jsdelivr.net/bluebird/3.4.7/bluebird.js"></script> -->
+  <script src="../node_modules/lodash/lodash.js"></script>
+  <script src="../node_modules/chartjs/chart.js"></script>
+  <script src="../node_modules/experiment-babylon-js/lib/babylon.max.js"></script>
+  <script src="../node_modules/experiment-boxes/lib/experimentBoxes.max.js" charset="utf-8"></script>
+  <script src="../lib/experiment.max.js" charset="utf-8"></script>
+  <style>
+  html, body {
+    /*overflow: hidden;*/
+    width   : 100%;
+    height  : 100%;
+    margin  : 0;
+    padding : 0;
+  }
+
+  .task-canvas {
+    width   : 100%;
+    height  : 100%;
+    touch-action: none;
+  }
+
+  body {
+    background: #E3E3E3;
+  }
+  </style>
+  <script>
+  /* global TaskObject BABYLON ParamBox delay _ fadeout math DEBUG_MODE_ON EventData*/
+  DEBUG_MODE_ON = false
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const taskObject = new TaskObject(document.getElementsByClassName('task-canvas'))
+
+    /* Create a custom scene by making a scene generator function */
+    const sceneGenerator = function (options) {
+      /**
+       * As it is the case for all functions called by the framework
+       * they are passed down a custom context through 'this'
+       * @see context
+       */
+      const context = this
+
+      const taskObject = context.taskObject
+      const R = context.R
+
+      const optionsBase = {
+        sceneKey: 'main',
+        canvasBackground: new BABYLON.Color4(0, 0.1, 0, 1),
+        backgroundRoundRadius: 50,
+        clearColor: new BABYLON.Color4(0, 0, 0, 1),
+        canvasPercentWidth: 0.2, // NOTE This does no work -- resize is bad if screencanvas is not fullscreen - you could do it manually but it is not smooth
+        canvasPercentHeight: 0.2,
+        mode: 'central',
+        level: null,
+      }
+
+      options = _.extend(optionsBase, options)
+
+      const scene = taskObject.create2DScene(options)
+
+      const texture = taskObject.cloneAssetIntoScene(taskObject.R.get.textures_logo2, scene)
+      const heldenklage = taskObject.cloneAssetIntoScene(taskObject.R.get.sounds_heldenklage, scene)
+      scene.stateManager.set('music', heldenklage)
+
+      texture.hasAlpha = true
+      const height = math.max(taskObject.renderSize.height * 0.05, 45)
+      new BABYLON.Sprite2D(texture, {
+        parent: scene.initialCanvas,
+        id: 'logo2',
+        marginAlignment: 'h: center, v:center',
+        size: new BABYLON.Size(height * 3000 / 730, height),
+        origin: BABYLON.Vector2.Zero(),
+      })
+
+      scene.stateManager.states.active.addAwakeningFunctions(function awaken() {
+        const music = this.stateManager.get('music')
+        music.observe('_isReadyToPlay').then(() => {
+          music.pause()
+          music.setVolume(1)
+          music.play()
+        })
+
+        this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes', event: new EventData('caca', { forState: 'pipi' }) })
+      })
+
+      scene.stateManager.states.active.addEndingFunctions(function ending() {
+        /*
+         * NOTE be carefull not to use arrow functions for state functions () => {}
+         * their 'this' will be the one of the parent environment and not the passed down context
+         */
+        const music = this.stateManager.get('music')
+        TaskObject.fadeOut(music, { currentVolume: 0.5, step: 0.2, threshold: 0.08, delayInMs: 100, pause: true })
+      })
+
+      scene.stateManager.states.active.addEventFunctions(R.get.events_modalDismissed, () => { console.log('Main scene modal was dismissed') })
+
+      /* Generate a default pause menu and link it to spacebar stroke */
+      scene.stateManager.setPauseKeyStroke()
+
+
+      return scene
+    }
+
+    taskObject.registerSceneGenerator(sceneGenerator)
+
+    taskObject.assetsToLoad = {
+      logo2: {
+        path: '/assets/experiment-js-light.svg',
+        type: 'texture',
+      },
+      heldenklage: {
+        path: '/assets/sounds/nietzscheHeldenklage.mp3',
+        type: 'sound',
+      },
+    }
+
+    taskObject.startTask().then((message) => {
+      console.log(message)
+      // Try this in the console :
+
+      taskObject.currentScene = 'main'
+    })
+
+    window.taskObject = taskObject
+  })
+  </script>
+</head>
+<body>
+  <!-- Create a canvas for the task -->
+  <canvas class="task-canvas">
+    <p>
+      Your browser does not support the canvas element and will not be able to render the task.
+    </p>
+    <p>
+      Please install Google Chrome to continue: https://www.google.com/chrome
+    </p>
+  </canvas>
+</body>
+</html>

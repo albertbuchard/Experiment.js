@@ -129,30 +129,7 @@ function recurse(promiseGenerator = mandatory(),
  * @method Deferred
  */
 function Deferred() {
-  // update 062115 for typeof
-  // if (typeof (Promise) !== 'undefined' && Promise.defer) {
-  //   //need import of Promise.jsm for example: Cu.import('resource:/gree/modules/Promise.jsm');
-  //   return Promise.defer();
-  // } else if (typeof (PromiseUtils) != 'undefined' && PromiseUtils.defer) {
-  //   //need import of PromiseUtils.jsm for example: Cu.import('resource:/gree/modules/PromiseUtils.jsm');
-  //   return PromiseUtils.defer();
-  // } else {
-  /* A method to resolve the associated Promise with the value passed.
-   * If the promise is already settled it does nothing.
-   *
-   * @param {anything} value : This value is used to resolve the promise
-   * If the value is a Promise then the associated promise assumes the state
-   * of Promise passed as value.
-   */
   this.resolve = null
-
-  /* A method to reject the assocaited Promise with the value passed.
-   * If the promise is already settled it does nothing.
-   *
-   * @param {anything} reason: The reason for the rejection of the Promise.
-   * Generally its an Error object. If however a Promise is passed, then the Promise
-   * itself will be the reason for rejection no matter the state of the Promise.
-   */
   this.reject = null
 
   /* A newly created Pomise object.
@@ -163,7 +140,6 @@ function Deferred() {
     this.reject = reject
   })
   Object.freeze(this)
-  // }
 }
 
 /**
@@ -557,9 +533,41 @@ Array.prototype.includes = function includes(array) {
   return true
 }
 
+
+/**
+ * observe - Starts a repeated check (default to every 500 millisecond) on the attribute of an object until it is set to a
+ *           specified value. Returns a promise that will resolve when the value match.
+ *           TODO maybe think of creating an _observedValues property somewhere... maybe in a global object
+ *
+ * @param {string} [attribute=string]   attribute to check
+ * @param {boolean} [lookForValue=true] value to match
+ * @param {number}  [rate=500]          how many milliseconds between two checks
+ *
+ * @returns {Promise} Promise will resolve when the attribute has the value lookForValue
+ */
+Object.defineProperty(Object.prototype, 'observe', {
+  value: function observe(attribute = mandatory(), lookForValue = true, rate = 500): Promise {
+    const deferred = new Deferred()
+    debuglog('Started observing ', this, ' attribute ', attribute, ' for value ', lookForValue, ' current value ', this[attribute])
+    const checkForValue = () => {
+      if (this[attribute] === lookForValue) {
+        debuglog('Finished observing ', this, ' attribute ', attribute, ' for value ', lookForValue, ' current value ', this[attribute])
+        deferred.resolve(lookForValue)
+      } else {
+        debuglog('im still observing ', this, ' attribute ', attribute, ' for value ', lookForValue, ' current value ', this[attribute])
+        delay(rate).then(checkForValue)
+      }
+    }
+    checkForValue()
+    return deferred.promise
+  },
+  enumerable: false,
+})
+
 export {
   Array,
   String,
+  Object,
   Number,
   diag,
   rowSum,
