@@ -31,17 +31,6 @@ or
 
 Make it cross platform from the get go and install Meteor and Electron
 
-
-## ExperimentJS tools
-
-### Scene generator builder
-If you are not sure how to start building your task, the scene generator builder (SGB) will construct
-the code of your scene from a JSON file containing the structured timeline of events or your task.
-You can also use SGB web interface to generate javascript code.
-
-SGB needs a three dimensional array of [eventName, duration, [allowedInputsFromUser]]
-
-
 ## Dependencies
 BABYLON.js, Lodash, mathjs, jQuery
 
