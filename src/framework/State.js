@@ -79,7 +79,16 @@ export default class State {
    * Function called at state awakening.
    * All functions of the _awakeningFunctions array will be called, they must return a Promise.
    */
-  awake() {
+  awake(reload = false) {
+    if (reload) {
+      if (this._frozenAt !== null) {
+        this._frozenAt = null
+        this._frozenEvents = []
+        this.stateManager.stateWasUnfreezed(this.stateKey)
+      }
+      // NOTE Might have other things to do here...
+    }
+
     /* --- If state was frozen unfreeze it but do not re-awake --- */
     if (this._frozenAt !== null) {
       this.unfreeze()
@@ -126,18 +135,25 @@ export default class State {
   }
 
   update() {
-    if (this._frozenAt === null) {
+    if ((this._frozenAt === null) && (this._stateManager._eventHeap.length)) {
       let nextEvent
-      while (this._stateManager.eventHeap.length) {
-        nextEvent = this._stateManager.getFirstEventAndRemoveFromHeap()
+      const events = this._stateManager.spliceEventsForState(this.stateKey)
+      for (let i = 0; i < events.length; i++) {
+        nextEvent = events[i]
         debuglog(`State: first event is ${nextEvent.flag}`)
 
         this.handleEvent(nextEvent)
       }
+      // while (events.length) {
+      //   nextEvent = his._stateManager.getFirstEventAndRemoveFromHeap(this.stateKey)
+      //   if (typeof nextEvent === 'undefined') {
+      //     debuglog('State.update: first event is undefined. Probably bc not meant for this state.') // TODO not good do better
+      //     break
+      //   }
+      // }
 
       // if (typeof this._updateFunctions !== 'undefined') {
       //
-      // }
     }
 
     // debuglog(this.stateKey + " updated.");

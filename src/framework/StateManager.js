@@ -207,12 +207,12 @@ export default class StateManager {
   }
 
   /* === State change === */
-  goToState(key = mandatory()) {
+  goToState(key = mandatory(), reload = false) {
     if (_.has(this.states, key)) {
       this.currentState.end()
 
       this._currentStateKey = key
-      this.states[key].awake()
+      this.states[key].awake(reload)
     } else {
       throw new Error('StateManager: Invalid state key.')
     }
@@ -239,7 +239,7 @@ export default class StateManager {
       backgroundRoundRadius: 0,
       x: 0,
       y: 0,
-      zOrder: -1,
+      zOrder: 1,
     }
 
     const GUI = new BABYLON.ScreenSpaceCanvas2D(scene, canvasOptions)
@@ -342,7 +342,7 @@ export default class StateManager {
           width: canvas.width,
           height: canvas.height,
           fill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.3, 0.3, 0.3, 0.5)),
-          fontName: '60pt Verdana',
+          fontName: '40pt Verdana',
           backgroundRoundRadius: 0,
         }
 
@@ -365,7 +365,9 @@ export default class StateManager {
           children: [
             new BABYLON.Text2D(options.text, {
               fontName: options.fontName,
-              marginAlignment: 'h: center, v:bottom',
+              marginAlignment: 'h: center, v:top',
+              fontSignedDistanceField: true,
+              zOrder: 0,
             }),
           ],
         }
@@ -467,7 +469,7 @@ export default class StateManager {
       storedAt: null,
     }
     if (data !== null) {
-      eventOptions.data = data
+      eventOptions.data = data // TODO ++++ SHOULD BE _.extend()
     }
 
     /* --- Not a time triggered event --- */
@@ -498,11 +500,27 @@ export default class StateManager {
     this._eventHeap = _.without(this._eventHeap, event)
   }
 
-  getFirstEventAndRemoveFromHeap() {
-    const event = this.firstEvent
-    this.removeFirstEvent()
+  getFirstEventAndRemoveFromHeap(byState = this.currentStateKey) {
+    for (let i = 0; i < this._eventHeap.length; i++) {
+      const event = this._eventHeap[i]
+      if ((event.forState === 'any') || (event.forState === byState)) {
+        return this._eventHeap.splice(i)
+      }
+    }
 
-    return (event)
+    return undefined
+  }
+
+  spliceEventsForState(byState = this.currentStateKey) {
+    const toSplice = []
+    for (let i = 0; i < this._eventHeap.length; i++) {
+      const event = this._eventHeap[i]
+      if ((event.forState === 'any') || (event.forState === byState)) {
+        toSplice.push(i)
+      }
+    }
+
+    return this._eventHeap.multisplice(...toSplice) // TODO use only one loop. And put events in a freezer if too long on the heap.
   }
 
   emptyEventHeap() {
@@ -718,16 +736,19 @@ export default class StateManager {
    * @param  {string} name String name of the variable
    * @return {?*}
    */
-  getGlobal(name = mandatory()) {
-    if (_.has(this.globals, name)) {
+  getGlobal(name = mandatory(), setDefault) {
+    if (this.globals.hasOwnProperty(name)) {
       return (this.globals[name])
+    } else if (typeof setDefault !== 'undefined') {
+      this.globals[name] = setDefault
+      return this.globals[name]
     }
-    debugWarn(`StateManager: globals do not contain variable '${name}'`)
+    debugWarn(`StateManager: globals do not contain variable '${name}' - and no default is given`)
     return (null)
   }
 
-  get(name = mandatory()) {
-    return (this.getGlobal(name))
+  get(name = mandatory(), setDefault) {
+    return (this.getGlobal(name, setDefault))
   }
 
   /**

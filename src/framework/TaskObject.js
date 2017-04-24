@@ -68,7 +68,7 @@ export default class TaskObject {
     /* --- Setup engine --- */
     if (engine === 'babylon') {
       // Start BabylonJS engine
-      this.engine = new BABYLON.Engine(this.canvas, false, null, false)
+      this.engine = new BABYLON.Engine(this.canvas, false, null, false) // TODO check hardware for retina
     } else {
       throw new Error('TaskObject.constructor: engine not supported.')
     }
@@ -275,11 +275,12 @@ export default class TaskObject {
     scene.loadingPromise = taskObject.loadAssets(assetObject, scene)
     .then(() => {
       const canvas = scene.initialCanvas
-      // const texture = new BABYLON.Texture('../assets/experiment-js.svg', scene)
+
       const texture = taskObject.R.get.textures_logo
       texture.hasAlpha = true
+
       const height = math.max(taskObject.renderSize.height * 0.05, 45)
-      const logo = new BABYLON.Sprite2D(texture, {
+      new BABYLON.Sprite2D(texture, { // eslint-disable-line
         parent: canvas,
         id: 'logo',
         marginAlignment: 'h: center, v:center',
@@ -337,6 +338,8 @@ export default class TaskObject {
     const assetManager = new BABYLON.AssetsManager(scene)
     const R = this.R
 
+    const binaryPromises = []
+
     const names = Object.keys(assetObject)
     let field
     let type
@@ -352,14 +355,14 @@ export default class TaskObject {
         } else if (soundFormats.indexOf(R.getFormat(path)) !== -1) {
           type = 'sound'
         } else {
-          console.warn('TaskObject.loadAssets: asset invalid or not implement with shorthand function')
+          console.warn('TaskObject.loadAssets: asset invalid or not implemented with shorthand string definition (use full object with path and type)')
           type = 'invalid'
         }
       } else if ((field.constructor === Object) && (Object.keys(field).includes(['path', 'type']))) {
         path = this.ASSETS_FOLDER + field.path
         type = field.type
       } else {
-        console.warn('TaskObject.loadAssets: asset invalid or not implement with shorthand function')
+        console.warn('TaskObject.loadAssets: asset invalid')
         type = 'invalid'
       }
 
@@ -377,9 +380,11 @@ export default class TaskObject {
       } else if (type === 'sound') {
         const assetManagerTask = assetManager.addBinaryFileTask(`${names[i]}Task`, path)
         assetManagerTask.onSuccess = function (task) {
+          const isReady = new Deferred()
+          binaryPromises.push(isReady.promise)
           R.add({
             sounds: {
-              [this.soundName]: new BABYLON.Sound(this.soundName, task.data, scene),
+              [this.soundName]: new BABYLON.Sound(this.soundName, task.data, scene, isReady.resolve),
             },
           })
         }.bind({
@@ -395,7 +400,7 @@ export default class TaskObject {
     assetManager.load()
     assetManager.onFinish = function onFinish(tasks) {
       debuglog('TaskObject.loadAssets: tasks completed', tasks)
-      loadDeferred.resolve(tasks)
+      Promise.all(binaryPromises).then(() => loadDeferred.resolve(tasks))
     }
 
     return loadDeferred.promise
@@ -689,18 +694,47 @@ export default class TaskObject {
     const optionsBase = {
       sceneKey: `scene${Math.random() * 100000}`,
       canvasBackground: new BABYLON.Color4(0, 0, 0, 1),
-      backgroundRoundRadius: 50,
+      backgroundRoundRadius: 0,
       clearColor: new BABYLON.Color4(0, 0, 0, 1),
-      canvasPercentWidth: 0.8,
+      width: null,
+      height: null,
+      canvasPercentWidth: 1,
       canvasPercentHeight: 1,
+      minWidth: Number.NEGATIVE_INFINITY,
+      minHeight: Number.NEGATIVE_INFINITY,
+      maxWidth: Number.POSITIVE_INFINITY,
+      maxHeight: Number.POSITIVE_INFINITY,
     }
 
     options = _.extend(optionsBase, options)
 
     let customSized = null
-    if ((options.canvasPercentHeight !== 1) || (options.canvasPercentWidth !== 1)) {
-      customSized = new BABYLON.Size(this.renderSize.width * options.canvasPercentWidth, this.renderSize.height * options.canvasPercentHeight)
+    let width = null
+    let height = null
+
+    const pWidth = (this.renderSize.width * options.canvasPercentWidth).boundTo(options.minWidth, options.maxWidth)
+    const pHeight = (this.renderSize.height * options.canvasPercentHeight).boundTo(options.minWidth, options.maxHeight)
+
+    let xCanvas = null
+    let yCanvas = null
+
+    if (options.width) {
+      width = options.width
+    } else if (options.canvasPercentWidth !== 1) {
+      width = pWidth
     }
+    if (options.height) {
+      height = options.height
+    } else if (options.canvasPercentHeight !== 1) {
+      height = pHeight
+    }
+
+    if ((height !== null) || (width !== null)) {
+      customSized = new BABYLON.Size(width !== null ? width : pWidth, height !== null ? height : pHeight)
+      xCanvas = (this.renderSize.width / 2) - ((this.renderSize.width * options.canvasPercentWidth) / 2)
+      yCanvas = (this.renderSize.height / 2) - ((this.renderSize.height * options.canvasPercentHeight) / 2)
+    }
+
 
     const scene = new BABYLON.Scene(this.engine)
 
@@ -728,9 +762,9 @@ export default class TaskObject {
       backgroundFill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
       backgroundRoundRadius: options.backgroundRoundRadius,
       fill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
-      x: (this.renderSize.width / 2) - ((this.renderSize.width * options.canvasPercentWidth) / 2),
-      y: (this.renderSize.height / 2) - ((this.renderSize.height * options.canvasPercentHeight) / 2),
-      designSize: customSized,
+      x: xCanvas,
+      y: yCanvas,
+      size: customSized,
       zOrder: 1,
       // cachingStrategy: BABYLON.Canvas2D.CACHESTRATEGY_CANVAS
     }
@@ -753,11 +787,11 @@ export default class TaskObject {
 
     /* --- Resize handler --- */
     const updateContentFrame = function () {
-      // NOTE not necessary in 2.6 it seems but keep the hook jsut in case
-      // if (customSized) {
-      //   this.initialCanvas.x = (this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2)
-      //   this.initialCanvas.y = (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2)
-      // }
+      if (customSized) {
+        console.warn((this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2), (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2))
+        this.initialCanvas.x = (this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2)
+        this.initialCanvas.y = (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2)
+      }
     }
 
 
@@ -990,7 +1024,7 @@ export default class TaskObject {
    *
    * @returns {type} Description
    */
-  modal({ type = 'centralSmall', title = '', content = '', event = new EventData(this.R.get.events_modalDismissed) }) {
+  modal({ type = 'centralLarge', title = '', content = '', event = new EventData(this.R.get.events_modalDismissed) }) {
     this.currentModal = { data: { type, title, content, event } }
 
     const modalBox = new SmartModal(type, function dismissed() {

@@ -36,7 +36,7 @@
   }
   </style>
   <script>
-  /* global TaskObject BABYLON ParamBox delay _ fadeout DEBUG_MODE_ON */
+  /* global TaskObject BABYLON ParamBox delay _ fadeout math DEBUG_MODE_ON EventData*/
   DEBUG_MODE_ON = false
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -56,11 +56,11 @@
 
       const optionsBase = {
         sceneKey: 'main',
-        canvasBackground: new BABYLON.Color4(0, 0, 0, 1),
+        canvasBackground: new BABYLON.Color4(0, 0.1, 0, 1),
         backgroundRoundRadius: 50,
         clearColor: new BABYLON.Color4(0, 0, 0, 1),
-        canvasPercentWidth: 1, // NOTE This does no work -- resize is bad if screencanvas is not fullscreen - you could do it manually but it is not smooth
-        canvasPercentHeight: 1,
+        canvasPercentWidth: 0.2, // NOTE This does no work -- resize is bad if screencanvas is not fullscreen - you could do it manually but it is not smooth
+        canvasPercentHeight: 0.2,
         mode: 'central',
         level: null,
       }
@@ -75,7 +75,7 @@
 
       texture.hasAlpha = true
       const height = math.max(taskObject.renderSize.height * 0.05, 45)
-      const logo = new BABYLON.Sprite2D(texture, {
+      new BABYLON.Sprite2D(texture, {
         parent: scene.initialCanvas,
         id: 'logo2',
         marginAlignment: 'h: center, v:center',
@@ -85,9 +85,11 @@
 
       scene.stateManager.states.active.addAwakeningFunctions(function awaken() {
         const music = this.stateManager.get('music')
-        music.pause()
-        music.setVolume(1)
-        music.play()
+        music.observe('_isReadyToPlay').then(() => {
+          music.pause()
+          music.setVolume(1)
+          music.play()
+        })
 
         this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes', event: new EventData('caca', { forState: 'pipi' }) })
       })
@@ -126,7 +128,8 @@
     taskObject.startTask().then((message) => {
       console.log(message)
       // Try this in the console :
-      // taskObject.currentScene = 'main'
+
+      taskObject.currentScene = 'main'
     })
 
     window.taskObject = taskObject

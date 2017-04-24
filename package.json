@@ -1,6 +1,6 @@
 {
   "name": "experiment-js",
-  "version": "0.5.14",
+  "version": "0.5.19",
   "description": "Javascript framework for 2D and 3D cross-platform experiments.",
   "main": "lib/experiment.max.js",
   "author": "Albert Buchard",
@@ -52,7 +52,7 @@
     "bootstrap": "3",
     "chartjs": "^0.3.24",
     "experiment-babylon-js": "^2.5.11",
-    "experiment-boxes": "^0.1.27",
+    "experiment-boxes": "^0.1.28",
     "experiment-mathjs": "^3.10.2",
     "jquery": "^3.1.1",
     "lodash": "^4.17.4"
