@@ -274,6 +274,13 @@ export default class StateManager {
       return ('state.pauseState: resolved')
     }
 
+    const forcePause = function () {
+      this.state.freeze() // key function
+      this.stateManager.goToState(this.R.get.states_pause)
+      return ('state.forcePause: resolved')
+    }
+
+
     const unPause = function (options = null) {
       if (typeof this.stateManager === 'undefined') { // TODO Discuss wether it is a good idea to check the context
         throw new Error('state.unPause: state is undefined')
@@ -298,8 +305,10 @@ export default class StateManager {
       if (stateKeys[i] !== this.R.get.states_pause) {
         // by default only one pause handling function per state
         this.registerEventFunction(stateKeys[i], flag, pauseState)
+        this.registerEventFunction(stateKeys[i], this.R.get.events_pause, forcePause)
       } else {
         this.registerEventFunction(stateKeys[i], flag, unPause)
+        this.registerEventFunction(stateKeys[i], this.R.get.events_pause, unPause)
       }
     }
 
@@ -324,11 +333,12 @@ export default class StateManager {
       const stateManager = this.stateManager
 
       const pauseBackground2D = stateManager.get('pauseBackground2D')
+      const canvas = this.scene.screenCanvas
 
       if (pauseBackground2D !== null) {
+        pauseBackground2D.size = canvas.size
         pauseBackground2D.levelVisible = true
       } else {
-        const canvas = this.scene.initialCanvas
         if (typeof canvas === 'undefined') {
           return ('awakePause: initialCanvas is undefined.')
         }
@@ -348,19 +358,18 @@ export default class StateManager {
 
         options = _.extend(baseOptions, options)
 
-        let customSized = null
+        let customSized = canvas.size
         if ((options.width !== canvas.width) || (options.height !== canvas.height)) {
           customSized = new BABYLON.Size(options.width, options.height)
         }
 
         const canvasOptions = {
           id: options.id,
-          backgroundFill: options.fill,
-          backgroundRoundRadius: options.backgroundRoundRadius,
+          roundRadius: options.backgroundRoundRadius,
           fill: options.fill,
-          x: (canvas.width / 2) - ((options.width) / 2),
-          y: (canvas.height / 2) - ((options.height) / 2),
-          designSize: customSized,
+          parent: this.scene.screenCanvas,
+          marginAlignment: 'h:center, v: center',
+          size: customSized,
           zOrder: 0,
           children: [
             new BABYLON.Text2D(options.text, {
@@ -372,7 +381,7 @@ export default class StateManager {
           ],
         }
 
-        const pauseBackground2D = new BABYLON.ScreenSpaceCanvas2D(this.scene, canvasOptions)
+        const pauseBackground2D = new BABYLON.Rectangle2D(canvasOptions)
 
         stateManager.set('pauseBackground2D', pauseBackground2D) // TODO Make those string part of R.
       }
@@ -470,6 +479,10 @@ export default class StateManager {
     }
     if (data !== null) {
       eventOptions.data = data // TODO ++++ SHOULD BE _.extend()
+    } else if ((time !== null) && (time.constructor === Object) && (data === null)) {
+      // treats time as the data and time as unknown
+      eventOptions.data = time
+      time = null
     }
 
     /* --- Not a time triggered event --- */

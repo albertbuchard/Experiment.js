@@ -59,8 +59,8 @@
         canvasBackground: new BABYLON.Color4(0, 0.1, 0, 1),
         backgroundRoundRadius: 50,
         clearColor: new BABYLON.Color4(0, 0, 0, 1),
-        canvasPercentWidth: 0.2, // NOTE This does no work -- resize is bad if screencanvas is not fullscreen - you could do it manually but it is not smooth
-        canvasPercentHeight: 0.2,
+        canvasPercentWidth: 0.5,
+        canvasPercentHeight: 1,
         mode: 'central',
         level: null,
       }
@@ -88,7 +88,7 @@
         music.observe('_isReadyToPlay').then(() => {
           music.pause()
           music.setVolume(1)
-          music.play()
+          // music.play()
         })
 
         this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes', event: new EventData('caca', { forState: 'pipi' }) })
@@ -107,6 +107,10 @@
 
       /* Generate a default pause menu and link it to spacebar stroke */
       scene.stateManager.setPauseKeyStroke()
+
+      scene.onResize = function () {
+        this.stateManager.newEvent(R.get.events_pause)
+      }
 
 
       return scene

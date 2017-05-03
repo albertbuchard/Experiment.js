@@ -245,7 +245,7 @@ export default class TaskObject {
     const optionsBase = {
       canvasBackground: new BABYLON.Color4(1, 1, 1, 1),
       backgroundRoundRadius: 0,
-      clearColor: new BABYLON.Color4(0, 0, 0, 1),
+      clearColor: new BABYLON.Color4(1, 1, 1, 1),
       canvasPercentWidth: 1,
       canvasPercentHeight: 1,
       mode: 'central',
@@ -708,32 +708,38 @@ export default class TaskObject {
 
     options = _.extend(optionsBase, options)
 
-    let customSized = null
-    let width = null
-    let height = null
+    const getCanvasDimensions = (noNull = true) => {
+      let size = null
+      let width = null
+      let height = null
 
-    const pWidth = (this.renderSize.width * options.canvasPercentWidth).boundTo(options.minWidth, options.maxWidth)
-    const pHeight = (this.renderSize.height * options.canvasPercentHeight).boundTo(options.minWidth, options.maxHeight)
+      const pWidth = (this.renderSize.width * options.canvasPercentWidth).boundTo(options.minWidth, options.maxWidth)
+      const pHeight = (this.renderSize.height * options.canvasPercentHeight).boundTo(options.minWidth, options.maxHeight)
 
-    let xCanvas = null
-    let yCanvas = null
+      let x = null
+      let y = null
 
-    if (options.width) {
-      width = options.width
-    } else if (options.canvasPercentWidth !== 1) {
-      width = pWidth
+      if (options.width) {
+        width = options.width
+      } else if (options.canvasPercentWidth !== 1) {
+        width = pWidth
+      }
+      if (options.height) {
+        height = options.height
+      } else if (options.canvasPercentHeight !== 1) {
+        height = pHeight
+      }
+
+      if ((height !== null) || (width !== null) || noNull) {
+        size = new BABYLON.Size(width !== null ? width : pWidth, height !== null ? height : pHeight)
+        x = (this.renderSize.width / 2) - ((this.renderSize.width * options.canvasPercentWidth) / 2)
+        y = (this.renderSize.height / 2) - ((this.renderSize.height * options.canvasPercentHeight) / 2)
+      }
+
+      return { size, x, y }
     }
-    if (options.height) {
-      height = options.height
-    } else if (options.canvasPercentHeight !== 1) {
-      height = pHeight
-    }
 
-    if ((height !== null) || (width !== null)) {
-      customSized = new BABYLON.Size(width !== null ? width : pWidth, height !== null ? height : pHeight)
-      xCanvas = (this.renderSize.width / 2) - ((this.renderSize.width * options.canvasPercentWidth) / 2)
-      yCanvas = (this.renderSize.height / 2) - ((this.renderSize.height * options.canvasPercentHeight) / 2)
-    }
+    const { size: customSized } = getCanvasDimensions()
 
 
     const scene = new BABYLON.Scene(this.engine)
@@ -757,22 +763,31 @@ export default class TaskObject {
     scene.clearColor = options.clearColor
 
     const camera = new BABYLON.ArcRotateCamera('Camera', 0, Math.PI / 2, 12, BABYLON.Vector3.Zero(), scene)
-    const canvasOptions = {
+    let canvasOptions = {
       id: 'ScreenCanvas',
-      backgroundFill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
-      backgroundRoundRadius: options.backgroundRoundRadius,
-      fill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
-      x: xCanvas,
-      y: yCanvas,
-      size: customSized,
+      backgroundFill: BABYLON.Canvas2D.GetSolidColorBrush(options.clearColor),
+      fill: BABYLON.Canvas2D.GetSolidColorBrush(options.clearColor),
       zOrder: 1,
-      // cachingStrategy: BABYLON.Canvas2D.CACHESTRATEGY_CANVAS
     }
 
     const canvas = new BABYLON.ScreenSpaceCanvas2D(scene, canvasOptions)
 
+    canvasOptions = {
+      id: 'initialCanvas',
+      parent: canvas,
+      roundRadius: options.backgroundRoundRadius,
+      borderThickness: 0,
+      fill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
+      marginAlignment: 'h: center, v: center',
+      size: customSized,
+      zOrder: 1,
+    }
+
+    const initialCanvas = new BABYLON.Rectangle2D(canvasOptions)
+
     /* Set the added canvas and camera to known fields in the scene*/
-    scene.initialCanvas = canvas
+    scene.screenCanvas = canvas
+    scene.initialCanvas = initialCanvas
     scene.initialCamera = camera
 
     /* Create a GUI canvas */
@@ -788,9 +803,18 @@ export default class TaskObject {
     /* --- Resize handler --- */
     const updateContentFrame = function () {
       if (customSized) {
-        console.warn((this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2), (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2))
-        this.initialCanvas.x = (this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2)
-        this.initialCanvas.y = (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2)
+        this.initialCanvas.resizeAt = this.parentTaskObject.timeInMs + 1000
+        delay(1100).then(() => {
+          if (this.initialCanvas.resizeAt < this.parentTaskObject.timeInMs) {
+            // ((this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2), (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2))
+            const { size: customSized } = getCanvasDimensions()
+            debugWarn('scene.updateContentFrame: window has been resized ', customSized)
+            this.initialCanvas.size = customSized
+            if ((typeof scene.onResize !== 'undefined') && (scene.onResize.constructor === Function)) {
+              scene.onResize.bind(this.parentTaskObject.context)()
+            }
+          }
+        })
       }
     }
 
