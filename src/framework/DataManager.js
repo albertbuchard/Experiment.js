@@ -215,6 +215,16 @@ export default class DataManager {
     }*/
   }
 
+  getStagedData(table = mandatory()) {
+    // TODO check that the tableis valid
+    // check if we have a last index, if not tset it to 0
+    // create a new array with the unpushed data
+    // lastIndex = table.length
+    const data = [table]
+    const lastIndex = null
+    return [data, lastIndex]
+  }
+
   /**
    * Generate an array of new Ids for the selected data table
    * @param  {string} name        Data table name
