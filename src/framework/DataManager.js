@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import $ from 'jquery'
 import Promise from 'bluebird'
 import {
   Array,
@@ -6,6 +7,7 @@ import {
   mandatory,
   debuglog,
   debugError,
+  delay,
 } from './utilities'
 
 /* Handles your data and logs for you */
@@ -56,6 +58,14 @@ export default class DataManager {
      * @type {Object}
      */
     this.dataTables = {}
+
+    /**
+     * Keeps the names of the table that need to be pushed
+     */
+    this.toPush = new Set()
+
+    /** Keeps track of whether the DataManager is waiting to push */
+    this.waitForPush = false
 
     /**
      * dataTables.globalLog is the default data table that stores all events of the task with this format:
@@ -123,23 +133,86 @@ export default class DataManager {
    * @param {object} rows Object containing a property for each column of the specified data table. Those can be array but all must have the same length (adding the same number of rows for each columns of data).
    */
   addRows(name = mandatory(), rows = mandatory()) {
-    if (this.isValidRows(name, rows)) {
-      const columnNamesRows = _.keys(rows)
-      const columnNamesDataTableWithoutId = _.without(_.keys(this.dataTables[name]), 'id')
-
-      if ((_.indexOf(columnNamesRows, 'id') === -1) && (this.automaticID)) {
-        this.dataTables[name].id = this.dataTables[name].id.concat(this.generateIds(name, rows[columnNamesRows[0].length]))
-      }
-
-      for (let i = 0; i < columnNamesDataTableWithoutId.length; i++) {
-        this.dataTables[name][columnNamesDataTableWithoutId[i]] = this.dataTables[name][columnNamesDataTableWithoutId[i]].concat(rows[columnNamesDataTableWithoutId[i]])
-      }
-
-      const nrows = (typeof rows.length === 'undefined') ? 1 : rows.length
-      debuglog(`DataManager.addRows: added ${nrows} rows to ${name} data table.`)
-    } else {
-      throw new Error('DataManager.addRows: Row is of invalid format.')
+    if (rows.constructor === Object) {
+      rows = [rows]
     }
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+
+      if (this.isValidRows(name, row)) {
+        const columnNamesRows = new Set(Object.keys(row))
+        const columnNamesDataTableWithoutId = new Set(Object.keys(this.dataTables[name]))
+        columnNamesDataTableWithoutId.delete('id')
+
+        if ((!columnNamesRows.has('id')) && (this.automaticID)) {
+          const id = this.generateIds(name, 1)
+          this.dataTables[name].id = this.dataTables[name].id.concat(id)
+        }
+
+        for (let i = 0; i < columnNamesDataTableWithoutId.length; i++) {
+          this.dataTables[name][columnNamesDataTableWithoutId[i]] = this.dataTables[name][columnNamesDataTableWithoutId[i]].concat(row[columnNamesDataTableWithoutId[i]])
+        }
+      } else {
+        throw new Error('DataManager.addRows: Row is of invalid format.')
+      }
+    }
+
+    const nrows = (typeof rows.length === 'undefined') ? 1 : rows.length
+    debuglog(`DataManager.addRows: added ${nrows} rows to ${name} data table.`)
+
+    this.prepareToPush(name)
+  }
+
+  prepareToPush(...names) {
+    if (names === []) {
+      names = new Set(Object.keys(this.dataTables))
+    }
+
+    this.toPush.unite(names)
+    if (!this.waitForPush) {
+      this.waitForPush = true
+      delay(this.addRate).then(() => {
+        this.push()
+      })
+    }
+  }
+
+  push() {
+    // TODO
+    /*
+    if (this.interface === this.INTERFACE_REST) {
+      for (const table of this.toPush) {
+        // get last index pushed to the server
+        // get the new data from that index
+        // send the data through ajax in json format
+        // once the ajax call is done, check status of http
+        // if 200 this.waitForPush = false and update the last updated index
+        // bind a context with the name of the table
+        const [data, lastIndex] = this.getStagedData(table)
+
+
+        $.ajax({
+          url: this.restURL,
+          type: 'POST',
+          data: JSON.stringify(data),
+          contentType: 'application/json',
+        })
+        .done(function (table, lastIndex, data, status) {
+          if (status === 200) {
+            this.setLastIndex(table, lastIndex)
+            this.toPush.delete(table)
+          }
+        }.bind(this, table, lastIndex))
+        .fail((xhr, status, e) => {
+
+        })
+      }
+    }
+
+    if (this.interface === this.INTERFACE_GRAPHQL) {
+      //
+    }*/
   }
 
   /**

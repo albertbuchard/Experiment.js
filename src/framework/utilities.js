@@ -564,11 +564,87 @@ Object.defineProperty(Object.prototype, 'observe', {
   enumerable: false,
 })
 
+
+/**
+ * isSuperset - Returns true if the set is a superset of the specified subset
+ *
+ * @param {Set} subset a set
+ *
+ * @returns {bool}
+ */
+Set.prototype.isSuperset = function (subset) {
+  for (const elem of subset) {
+    if (!this.has(elem)) {
+      return false
+    }
+  }
+  return true
+}
+
+Set.prototype.union = function (setB) {
+  const union = new Set(this)
+  for (const elem of setB) {
+    union.add(elem)
+  }
+  return union
+}
+
+
+/**
+ * unite - Performs union in place. Replaces current set.
+ *
+ * @param {Set} setB
+ *
+ * @returns {undefined}
+ */
+Set.prototype.unite = function (setB) {
+  for (const elem of setB) {
+    this.add(elem)
+  }
+  return undefined
+}
+
+Set.prototype.intersection = function (setB) {
+  const intersection = new Set()
+  for (const elem of setB) {
+    if (this.has(elem)) {
+      intersection.add(elem)
+    }
+  }
+  return intersection
+}
+
+
+/**
+ * intersect - Performs an intersection in place (replace current set values)
+ *
+ * @param {Set} setB Description
+ *
+ * @returns {undefined}
+ */
+Set.prototype.intersect = function (setB) {
+  for (const elem of this) {
+    if (!setB.has(elem)) {
+      this.remove(elem)
+    }
+  }
+  return undefined
+}
+
+Set.prototype.difference = function (setB) {
+  const difference = new Set(this)
+  for (const elem of setB) {
+    difference.delete(elem)
+  }
+  return difference
+}
+
 export {
   Array,
   String,
   Object,
   Number,
+  Set,
   diag,
   rowSum,
   getRow,
