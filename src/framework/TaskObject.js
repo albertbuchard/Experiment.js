@@ -245,7 +245,7 @@ export default class TaskObject {
     const optionsBase = {
       canvasBackground: new BABYLON.Color4(1, 1, 1, 1),
       backgroundRoundRadius: 0,
-      clearColor: new BABYLON.Color4(0, 0, 0, 1),
+      clearColor: new BABYLON.Color4(1, 1, 1, 1),
       canvasPercentWidth: 1,
       canvasPercentHeight: 1,
       mode: 'central',
