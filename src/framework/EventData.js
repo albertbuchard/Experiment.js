@@ -15,7 +15,7 @@ export default class EventData {
     this.flag = flag
 
     /* --- Set data and happenedAt --- */
-    const baseData = {
+    this.BASE_DATA_FIELDS = {
       belongsTo: ['globalLog'], // could be an array of strings
       handledAt: null,
       storedAt: null,
@@ -26,13 +26,13 @@ export default class EventData {
       // Treat it as the data
       if (data === null) {
         this.happenedAt = EventData.timeInMs
-        this.data = _.extend(baseData, happenedAt)
+        this.data = _.extend(this.BASE_DATA_FIELDS, happenedAt)
       } else {
         throw new Error('EventData.constructor: parameters order or type is invalid.')
       }
     } else {
       this.happenedAt = happenedAt
-      this.data = _.extend(baseData, data)
+      this.data = _.extend(this.BASE_DATA_FIELDS, data)
     }
 
 
@@ -57,5 +57,25 @@ export default class EventData {
 
   static get timeInMs() {
     return new Date().getTime()
+  }
+
+  get specificData() {
+    const dataKeys = Object.keys(this.data)
+    const result = {}
+    for (let i = 0; i < dataKeys.length; i++) {
+      result[dataKeys[i]] = this.data[dataKeys]
+    }
+    return result
+  }
+
+  get formatted() {
+    return {
+      flag: this.flag,
+      forState: this.forState,
+      happenedAt: this.happenedAt,
+      handledAt: this.data.handledAt,
+      storedAt: this.data.storedAt,
+      data: JSON.stringify(this.specificData),
+    }
   }
 }

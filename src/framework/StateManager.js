@@ -133,12 +133,12 @@ export default class StateManager {
         event.stored = true
 
         debuglog('StateManager.storeEvent: storing event.')
-        this._dataManager.addRows(belongsTo[i], event)
-      } catch (error) {
-        console.error(`StateManager.storeEvent: Could not store data in ${belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
-        this.storeInErrorLog(event)
-      } finally {
+        // this._dataManager.log(belongsTo[i], event)
+        this._dataManager.addRows(belongsTo[i], event.formatted)
         debuglog('StateManager.storeEvent: event stored.', event)
+      } catch (error) {
+        debugError(`StateManager.storeEvent: Could not store data in ${belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
+        this.storeInErrorLog(event)
       }
     }
   }

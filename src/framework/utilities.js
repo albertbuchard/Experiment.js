@@ -525,7 +525,10 @@ Array.prototype.allHaveConstructor = function allHaveConstructor(constructorObje
   return true
 }
 
-Array.prototype.includes = function includes(array) {
+Array.prototype.includes = function includes(...array) {
+  if ((array.length === 1) && ((array[0].constructor === Set) || (array[0].constructor === Array))) {
+    array = array[0]
+  }
   // returns a bool wether all value of specified array are in current array
   for (let i = 0; i < array.length; i++) {
     if (this.indexOf(array[i]) === -1) { return false }
@@ -589,6 +592,18 @@ Set.prototype.union = function (setB) {
   return union
 }
 
+Set.prototype.sample = function (n = 1, repeat = true) {
+  const result = []
+  const array = Array.from(this)
+  for (let i = 0; i < n; i++) {
+    const index = _.random(0, array.length - 1)
+    result.push(array[index])
+    if (!repeat) {
+      array.splice(index, 1)
+    }
+  }
+  return result
+}
 
 /**
  * unite - Performs union in place. Replaces current set.

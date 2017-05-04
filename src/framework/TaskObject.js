@@ -86,7 +86,7 @@ export default class TaskObject {
     this.dataManager = new DataManager(this)
 
     /* --- Add global mouse and keyboard event tables --- */
-    const globalLogFields = ['id', 'flag', 'happenedAt', 'data']
+    const globalLogFields = this.dataManager.GLOBAL_LOG_FIELDS
 
     // globalLogs is the default data table of the dataManager,
     // adding specific data table for mouse and key events
