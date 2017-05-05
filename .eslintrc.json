@@ -24,6 +24,7 @@
         "no-continue": 0,
         "no-mixed-operators": ["error", {"allowSamePrecedence": true}],
         "import/no-mutable-exports": 0,
-        "no-new": 0
+        "no-new": 0,
+        "prefer-arrow-callback": ["error", { "allowNamedFunctions": true }]
     }
 }

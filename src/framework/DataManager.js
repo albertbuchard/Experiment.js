@@ -4,6 +4,7 @@ import Promise from 'bluebird'
 import {
   Array,
   String,
+  Deferred,
   mandatory,
   debuglog,
   debugError,
@@ -94,9 +95,17 @@ export default class DataManager {
     this.INTERFACE_REST = 'rest'
     this.INTERFACE_GRAPHQL = 'graphql'
     this.INTERFACE_WEBSOCKET = 'websocket'
+    this.QUERY_LOGIN = 'login'
     this.QUERY_ADD = 'add'
     this.QUERY_GET_CHECKPOINT = 'getCheckpoints'
     this.QUERY_SET_CHECKPOINT = 'setCheckpoint'
+
+    /**
+     * Boolean if set to true, credentials returned from the server are stored in the local storage
+     * for automatic identification
+     * @type {[type]}
+     */
+    this.useLocalStorageCredentials = true
 
     /**
      * Interface used by the data manager to communicate with the api
@@ -107,7 +116,7 @@ export default class DataManager {
      *
      * @type {array}
      */
-    this.interfaces = []
+    this.connections = []
 
     this.addRate = 2000
 
@@ -453,7 +462,80 @@ export default class DataManager {
     // Post or get HTTP
   }
 
+  /* ======= Credentials ======= */
+  login(connection = mandatory(), variables = null, deferred = new Deferred()) {
+    // an interface needs to have a login endpoint to be used in this function
+    // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
+    if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
+      if (variables === null) {
+        return this.login(connection, { userId: 'blabla' }, deferred)// call a smartForm modal with userId and password
+      }
+        // perform ajax with the variables as credentials
+      const data = {
+        interface: connection.type,
+        credentials: variables,
+        query: connection.login,
+      }
+
+        // send the data through ajax in json format
+      $.ajax({
+        url: connection.endpoint,
+        type: 'POST',
+        data: JSON.stringify(data),
+        contentType: 'application/json',
+      })
+        .done(function done(data, status) {
+          // if success set credentials inside the connection
+          connection.credentials = data.credentials
+          if (this.useLocalStorageCredentials) {
+            this.local(connection.name, { credentials: data.credentials })
+          }
+          debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
+          deferred.resolve()
+        }.bind(this))
+        .fail(function (connection, table, xhr) {
+          // if failure call login with no variables to call a smartForm
+          const json = xhr.responseJSON
+          const message = json.message || ''
+          debugError(`DataManager.push: error during login with message ${message}`)
+          this.login(connection, null, deferred)
+        }.bind(this, connection))
+    }
+
+    return deferred.promise
+  }
   /* ======= Push ======= */
+
+  /**
+   * Sets or retrieve a variable from local storage in a JSON format
+   * @method local
+   * @param  {string} [variable=null]        variable name, if not specified returns the whole localStorage object
+   * @param  {any} [data=null]               if specified, the variable will be set and not retrieved
+   * @return {!any}                          undefined if set, variable value if get
+   */
+  local(variable = null, data = null) {
+    if (variable === null) {
+      return localStorage
+    }
+
+    if (data !== null) {
+      localStorage[variable] = JSON.stringify(data)
+      return undefined
+    }
+    if (!localStorage.hasOwnProperty(variable)) {
+      debugError(`DataManager.local: localStorage has no variable named ${variable}`)
+      return undefined
+    }
+
+    try {
+      const data = JSON.parse(localStorage[variable])
+      return data
+    } catch (e) {
+      debugError('DataManager.local: variable is probably not JSON ', e)
+    }
+    return localStorage[variable]
+  }
+
   prepareToPush(...names) {
     if (names === []) {
       names = new Set(Object.keys(this.dataTables))
@@ -516,17 +598,21 @@ export default class DataManager {
 
   push() {
     this.waitForPush = 0
-    for (let i = 0; i < this.interfaces.length; i++) {
-      const connection = this.interfaces[i]
+    for (let i = 0; i < this.connections.length; i++) {
+      const connection = this.connections[i]
       if (connection.type === this.INTERFACE_REST) {
         for (const table of this.toPush) {
           // get last index pushed to the server
           // get the new data from that index
+          if ((this.useLocalStorageCredentials) && (typeof this.local(connection.name) !== 'undefined') && (this.local(connection.name).hasOwnProperty('credentials'))) {
+            connection.credentials = this.local(connection.name).credentials
+          }
+
           const [rows, lastIndex] = this.getStagedData(table)
           const data = {
             interface: connection.type,
             credentials: connection.credentials,
-            query: connection.variables.add,
+            query: connection.add,
             variables: {
               table,
               rows,
@@ -535,7 +621,7 @@ export default class DataManager {
 
           // send the data through ajax in json format
           $.ajax({
-            url: connection.variables.endpoint,
+            url: connection.endpoint,
             type: 'POST',
             data: JSON.stringify(data),
             contentType: 'application/json',
@@ -548,34 +634,43 @@ export default class DataManager {
             this.toPush.delete(table)
             debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
           }.bind(this, table, lastIndex))
-          .fail(function (table, xhr, status, e) {
-            debugError(`DataManager.push: could not push ${table} -- error status ${status} -- will retry`, e)
-            this.prepareToPush(table)
-          }.bind(this, table))
+          .fail(function (connection, table, xhr) {
+            const json = xhr.responseJSON
+            if (json.shouldLog) {
+              debugError('DataManager.push: user is not logged in -- will call the log function.')
+              // will pop a form to log
+              this.login(connection).then(() => { this.prepareToPush(table) })
+            } else {
+              debugError(`DataManager.push: could not push ${table} -- will retry`, json.message)
+              this.prepareToPush(table)
+            }
+          }.bind(this, connection, table))
         }
       }
 
-      if (this.interface === this.INTERFACE_GRAPHQL) {
+      if (connection.type === this.INTERFACE_GRAPHQL) {
         //
       }
     }
   }
 
-  setInterface(variables = mandatory(), type = this.INTERFACE_REST) {
-    if (type === this.INTERFACE_REST) {
-      const data = { type: this.INTERFACE_REST, variables: {} }
+  setConnection(variables = mandatory()) {
+    if ((!variables.hasOwnProperty('type')) || (variables.type === this.INTERFACE_REST)) {
       const defaultVariables = {
+        type: this.INTERFACE_REST,
+        name: null,
         endpoint: null,
         credentials: null,
         add: this.QUERY_ADD,
         checkpoint: this.QUERY_CHECKPOINT,
+        login: this.QUERY_LOGIN,
         // TODO rest of basic api
       }
 
       variables = _.extend(defaultVariables, variables)
       if (variables.endpoint !== null) {
-        data.variables = variables
-        this.interfaces.push(data)
+        variables.name = variables.name || variables.type
+        this.connections.push(variables)
       } else {
         throw new Error('DataManager.setInterface: needs at least an endpoint.')
       }

@@ -45,7 +45,7 @@
 
     taskObject.startTask().then((message) => {
       console.log(message)
-      taskObject.dataManager.setInterface({ endpoint: './api/api.php' })
+      taskObject.dataManager.setConnection({ endpoint: './api/api.php', credentials: { userId: 'test' } })
     })
 
     window.taskObject = taskObject

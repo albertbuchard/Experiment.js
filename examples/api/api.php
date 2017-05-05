@@ -1,6 +1,8 @@
 <?php
 
   $httpStatus = 200;
+  $accredited = false;
+  $shouldLog = false;
   try {
     // Check for valid request and presence of credentials
     $data = [];
@@ -18,13 +20,19 @@
         throw new Exception('Empty or invalid query', 1);
     }
 
+    if (($data['credentials'] === null)||(!isset($data['credentials']['userId']))||($data['credentials']['userId'] === 'test')) {
+      $shouldLog = true;
+      throw new Exception('Not accredited', 1);
+    } else {
+      $data['credentials'] = ['userId' => $data['credentials']['userId']];
+    }
 
-    $accredited = false;
     $result = $data;
 
   } catch (Exception $e) {
     $httpStatus = 500;
-    $result = $e.message;
+    $result['message'] = $e.message;
+    $result['shouldLog'] = $shouldLog;
   }
 
 
