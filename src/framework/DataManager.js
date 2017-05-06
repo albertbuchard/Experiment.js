@@ -468,7 +468,7 @@ export default class DataManager {
     // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
     if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
       if (variables === null) {
-        return this.login(connection, { userId: 'blabla' }, deferred)// call a smartForm modal with userId and password
+        return this.login(connection, { userId: 'John', password: 'az4444' }, deferred)// call a smartForm modal with userId and password
       }
         // perform ajax with the variables as credentials
       const data = {
@@ -493,7 +493,7 @@ export default class DataManager {
           debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
           deferred.resolve()
         }.bind(this))
-        .fail(function (connection, table, xhr) {
+        .fail(function (connection, xhr) {
           // if failure call login with no variables to call a smartForm
           const json = xhr.responseJSON
           const message = json.message || ''
@@ -635,7 +635,7 @@ export default class DataManager {
             debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
           }.bind(this, table, lastIndex))
           .fail(function (connection, table, xhr) {
-            const json = xhr.responseJSON
+            const json = xhr.responseJSON || { message: '', shouldLog: false }
             if (json.shouldLog) {
               debugError('DataManager.push: user is not logged in -- will call the log function.')
               // will pop a form to log
@@ -667,10 +667,16 @@ export default class DataManager {
         // TODO rest of basic api
       }
 
-      variables = _.extend(defaultVariables, variables)
-      if (variables.endpoint !== null) {
-        variables.name = variables.name || variables.type
-        this.connections.push(variables)
+      const connection = _.extend(defaultVariables, variables)
+      if (connection.endpoint !== null) {
+        connection.name = connection.name || connection.type
+
+        if (connection.credentials !== null) {
+          this.login(connection, connection.credentials)
+          .then(() => { this.connections.push(connection) })
+        } else {
+          this.connections.push(connection)
+        }
       } else {
         throw new Error('DataManager.setInterface: needs at least an endpoint.')
       }

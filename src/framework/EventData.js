@@ -63,7 +63,7 @@ export default class EventData {
     const dataKeys = Object.keys(this.data)
     const result = {}
     for (let i = 0; i < dataKeys.length; i++) {
-      result[dataKeys[i]] = this.data[dataKeys]
+      result[dataKeys[i]] = this.data[dataKeys[i]]
     }
     return result
   }

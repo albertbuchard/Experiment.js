@@ -1,0 +1,15 @@
+<Files "utilities.php">
+Order Allow,Deny
+Deny from all
+</Files>
+<IfModule !php5_module>
+    <FilesMatch "\.(php|phtml)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule> 
+<IfModule php5_module>
+    AddType text/html .php .phtml .phps
+    AddHandler application/x-httpd-php .php .phtml
+    AddHandler application/x-httpd-php-source .phps
+</IfModule>

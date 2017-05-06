@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Experiment[js].exampleOne</title>
+  <script src="../node_modules/jquery/dist/jquery.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+  <script src="../node_modules/experiment-mathjs/dist/math.js"></script>
+  <!-- <script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script> -->
+  <!-- <script src="http://cdn.jsdelivr.net/bluebird/3.4.7/bluebird.js"></script> -->
+  <script src="../node_modules/lodash/lodash.js"></script>
+  <script src="../node_modules/chartjs/chart.js"></script>
+  <script src="../node_modules/experiment-babylon-js/lib/babylon.max.js"></script>
+  <script src="../node_modules/experiment-boxes/lib/experimentBoxes.max.js" charset="utf-8"></script>
+  <script src="../lib/experiment.max.js" charset="utf-8"></script>
+  <style>
+  html, body {
+    /*overflow: hidden;*/
+    width   : 100%;
+    height  : 100%;
+    margin  : 0;
+    padding : 0;
+  }
+
+  .task-canvas {
+    width   : 100%;
+    height  : 100%;
+    touch-action: none;
+  }
+
+  body {
+    background: #E3E3E3;
+  }
+  </style>
+  <script>
+  /* global TaskObject BABYLON ParamBox delay _ fadeout DEBUG_MODE_ON */
+  DEBUG_MODE_ON = false
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const taskObject = new TaskObject(document.getElementsByClassName('task-canvas'))
+
+
+    taskObject.startTask().then((message) => {
+      console.log(message)
+      taskObject.dataManager.setConnection({ endpoint: './php/mysql/index.php', credentials: { userId: 'John', password: 'az4444' } })
+    })
+
+    window.taskObject = taskObject
+  })
+  </script>
+</head>
+<body>
+  <!-- Create a canvas for the task -->
+  <canvas class="task-canvas">
+    <p>
+      Your browser does not support the canvas element and will not be able to render the task.
+    </p>
+    <p>
+      Please install Google Chrome to continue: https://www.google.com/chrome
+    </p>
+  </canvas>
+</body>
+</html>
