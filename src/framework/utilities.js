@@ -131,15 +131,26 @@ function recurse(promiseGenerator = mandatory(),
 function Deferred() {
   this.resolve = null
   this.reject = null
-
+  this.resolved = false
+  this.rejected = false
+  this.status = 0
   /* A newly created Pomise object.
    * Initially in pending state.
    */
   this.promise = new Promise((resolve, reject) => {
-    this.resolve = resolve
-    this.reject = reject
+    this.resolve = (data) => {
+      this.resolved = true
+      resolve(data)
+    }
+    this.reject = (e) => {
+      this.rejected = true
+      if (e.constructor === String) {
+        e = new Error(e)
+      }
+      reject(e)
+    }
   })
-  Object.freeze(this)
+  // Object.freeze(this)
 }
 
 /**
@@ -525,7 +536,10 @@ Array.prototype.allHaveConstructor = function allHaveConstructor(constructorObje
   return true
 }
 
-Array.prototype.includes = function includes(array) {
+Array.prototype.includes = function includes(...array) {
+  if ((array.length === 1) && ((array[0].constructor === Set) || (array[0].constructor === Array))) {
+    array = array[0]
+  }
   // returns a bool wether all value of specified array are in current array
   for (let i = 0; i < array.length; i++) {
     if (this.indexOf(array[i]) === -1) { return false }
@@ -564,11 +578,99 @@ Object.defineProperty(Object.prototype, 'observe', {
   enumerable: false,
 })
 
+
+/**
+ * isSuperset - Returns true if the set is a superset of the specified subset
+ *
+ * @param {Set} subset a set
+ *
+ * @returns {bool}
+ */
+Set.prototype.isSuperset = function (subset) {
+  for (const elem of subset) {
+    if (!this.has(elem)) {
+      return false
+    }
+  }
+  return true
+}
+
+Set.prototype.union = function (setB) {
+  const union = new Set(this)
+  for (const elem of setB) {
+    union.add(elem)
+  }
+  return union
+}
+
+Set.prototype.sample = function (n = 1, repeat = true) {
+  const result = []
+  const array = Array.from(this)
+  for (let i = 0; i < n; i++) {
+    const index = _.random(0, array.length - 1)
+    result.push(array[index])
+    if (!repeat) {
+      array.splice(index, 1)
+    }
+  }
+  return result
+}
+
+/**
+ * unite - Performs union in place. Replaces current set.
+ *
+ * @param {Set} setB
+ *
+ * @returns {undefined}
+ */
+Set.prototype.unite = function (setB) {
+  for (const elem of setB) {
+    this.add(elem)
+  }
+  return undefined
+}
+
+Set.prototype.intersection = function (setB) {
+  const intersection = new Set()
+  for (const elem of setB) {
+    if (this.has(elem)) {
+      intersection.add(elem)
+    }
+  }
+  return intersection
+}
+
+
+/**
+ * intersect - Performs an intersection in place (replace current set values)
+ *
+ * @param {Set} setB Description
+ *
+ * @returns {undefined}
+ */
+Set.prototype.intersect = function (setB) {
+  for (const elem of this) {
+    if (!setB.has(elem)) {
+      this.remove(elem)
+    }
+  }
+  return undefined
+}
+
+Set.prototype.difference = function (setB) {
+  const difference = new Set(this)
+  for (const elem of setB) {
+    difference.delete(elem)
+  }
+  return difference
+}
+
 export {
   Array,
   String,
   Object,
   Number,
+  Set,
   diag,
   rowSum,
   getRow,
