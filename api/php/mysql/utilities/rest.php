@@ -5,19 +5,24 @@ $_INTERFACE_GRAPHQL = 'graphql';
 $_INTERFACE_WEBSOCKET = 'websocket';
 $_QUERY_ADD = 'add';
 $_QUERY_LOGIN = 'login';
-$_QUERY_GET_CHECKPOINT = 'getCheckpoints';
+$_QUERY_GET_CHECKPOINT = 'getCheckpoint';
 $_QUERY_SET_CHECKPOINT = 'setCheckpoint';
 
 $_SHOULD_CREATE_TABLES = true;
+$_SHOULD_ALTER_TABLES = true;
 $_SHOULD_SET_USERID_FOR_ALL_ADD = true;
 $_USE_LOG_IP = true;
 $_USE_SESSIONS = false;
 $_LOGKEY_EXPIRES_IN = 86400000; // 1 day in ms
 
-function prepare_and_execute($bdd, $query, $params) {
+$DB_NAME = 'cwfmri';
+$_NO_CHECKPOINT = 'none';
+$_TABLE_CHECKPOINTS = 'checkpoints';
+
+function prepare_and_execute($bdd, $query, $params = null) {
   try {
     $req = $bdd->prepare($query);
-    bind_values($req, $params);
+    if ($params) bind_values($req, $params);
     $req->execute();
     if ($req) {
       return $req;
@@ -123,6 +128,8 @@ function set_logkey($bdd, $userId, $logKey) {
 
   try {
     $req = prepare_and_execute($bdd, $query, $params);
+
+    $GLOBALS['userId'] = $userId;
     add_rows($bdd, 'userLogs', [$params]);
   } catch (Exception $e) {
     throw $e;
@@ -269,6 +276,7 @@ function set_user_timestamp($rows, $userId) {
         $rows[$i]['dbTimestamp'] = get_timestamp_ms();
       }
     }
+    return $rows;
 }
 
 function add_rows($bdd, $table, $rows) {
@@ -276,9 +284,13 @@ function add_rows($bdd, $table, $rows) {
     throw new Exception("is_accredited: bdd is not a valid pdo connection", 1);
   }
 
+  if ($GLOBALS['userId'] === null) {
+   throw new  Exception("add_rows: no valid user id.", 1);
+  }
+
   if ($GLOBALS['_SHOULD_SET_USERID_FOR_ALL_ADD']) {
     // add userId and dbTimestamp to all tables even if not sent by the dataManager
-    set_user_timestamp($rows, $userId);
+    $rows = set_user_timestamp($rows, $GLOBALS['userId']);
   }
 
   table_exists_or_create($bdd, $table, $rows);
@@ -300,6 +312,7 @@ function add_rows($bdd, $table, $rows) {
     }
 
     foreach ($row as $key => $value) {
+      if ($key === 'id') continue;
       if ($and) {
         $query .= ($i > 0) ? "" :" , ";
         $valuesRow[$j] .= " , ";
@@ -320,6 +333,7 @@ function add_rows($bdd, $table, $rows) {
   $j = 0;
   foreach ($rows as $i => $row) {
     foreach ($row as $key => $value) {
+      if ($key === 'id') continue;
       $type = PDO::PARAM_STR;
       if (is_bool($value)) {
         $type = PDO::PARAM_BOOL;
@@ -334,27 +348,57 @@ function add_rows($bdd, $table, $rows) {
   }
 
   if ($req->execute()) {
-    return true;
+    return $rows;
   } else {
     throw new Exception("add_row: insert was unsuccessful -- " . $query . " " . $req->errorInfo()[2], 1);
   }
+
 }
 
 
-function table_alter_to_match($bdd, $table, $rows) {
+function table_alter_to_match($bdd, $table, $rowsToCheck) {
   try {
+    if (!isAssoc($rowsToCheck)) {
+      $rowsToCheck = $rowsToCheck[0];
+      if (!isAssoc($rowsToCheck)) {
+        throw new Exception("table_alter_to_match: invalid rows.", 1);
+      }
+    }
+
     $query = "SELECT COLUMN_NAME FROM information_schema.columns
               WHERE table_schema = :dbname AND table_name = :table";
     $req = prepare_and_execute($bdd, $query, ['dbname' => $GLOBALS['DB_NAME'], 'table' => $table]);
+    $rowsInDb = $req->fetchAll(PDO::FETCH_ASSOC);
 
+    $columns = [];
+    foreach ($rowsInDb as $key => $row) {
+      $columns[] = $row['COLUMN_NAME'];
+    }
+
+    $toAdd = [];
+    $add = "";
+    foreach ($rowsToCheck as $key => $value) {
+      if (!in_array($key, $columns)) {
+        // a key is not in the columns, alter the table.
+        $toAdd[] = $add . "ADD COLUMN ${key} " . type_from_value($value);
+        $add = ", ";
+      }
+    }
+
+    if ($add !== "") {
+      // at least one column to add
+      // build the query
+      $query = "ALTER TABLE ${table} " . implode($toAdd);
+
+      // execute the query
+      $req = prepare_and_execute($bdd, $query);
+    }
   } catch (Exception $e) {
     throw new Exception("table_alter_to_match: error ". $e['message'], 1);
   }
 }
 
-function table_exists_or_create($bdd, $table, $rows) {
-
-
+function is_existing_table($bdd, $table) {
   $query = "SHOW TABLES LIKE :table";
 
   $req = $bdd->prepare($query);
@@ -363,6 +407,14 @@ function table_exists_or_create($bdd, $table, $rows) {
 
   $count = $req->rowCount();
   if ($count == 1) {
+    return true;
+  }
+
+  return false;
+}
+
+function table_exists_or_create($bdd, $table, $rows) {
+  if (is_existing_table($bdd,$table)) {
     if ($GLOBALS['_SHOULD_ALTER_TABLES']) {
         table_alter_to_match($bdd, $table, $rows);
     }
@@ -425,42 +477,33 @@ function type_from_value($value) {
   return "TEXT";
 }
 
-function get_checkpoints($bdd, $userId) {
+function get_checkpoint($bdd, $userId) {
   if (!pdo_ping($bdd)){
-    throw new Exception("is_accredited: bdd is not a valid pdo connection", 1);
+    throw new Exception("get_checkpoint: bdd is not a valid pdo connection", 1);
   }
 
-  $query = "INSERT INTO ${table} (";
-  $values = " VALUES (";
-  $and = false;
-  foreach ($row as $key => $value) {
-    if ($and) {
-      $query .= " , ";
-      $values .= " , ";
-    }
-    $query .= "${key}";
-    $values .= ":${key}";
-    $and = true;
-  }
-  $query .= ")" . $values . " ON DUPLICATE KEY UPDATE ";
+  $table = $GLOBALS['_TABLE_CHECKPOINTS'];
+  $noCheckpoint = $GLOBALS['_NO_CHECKPOINT'];
 
-
-  $req = $bdd->prepare($query);
-
-  foreach ($row as $key => $value) {
-    $type = PDO::PARAM_STR;
-    if (is_bool($value)) {
-      $type = PDO::PARAM_BOOL;
-    } elseif (is_int($value)) {
-      $type = PDO::PARAM_INT;
-    }
-    $req->bindParam(":${key}", $value, $type);
+  if (!is_existing_table($bdd,$table)) {
+    return ['code' => $noCheckpoint, 'timestamp' => 0];
   }
 
-  if ($req->execute()) {
-    return true;
+  $query = "SELECT code, dbTimestamp FROM ${table}
+            WHERE userId = :userId
+            ORDER BY dbTimestamp DESC
+            LIMIT 1";
+
+
+  // execute the query
+  $req = prepare_and_execute($bdd, $query, ['userId' => $userId]);
+
+  $count = $req->rowCount();
+  if ($count >= 1) {
+    $rows = $req->fetchAll(PDO::FETCH_ASSOC);
+    return ['code' => $rows[0]['code'], 'timestamp' => $rows[0]['dbTimestamp']];
   } else {
-    throw new Exception("add_row: insert was unsuccessful -- " . $req->errorInfo()[2], 1);
+    return ['code' => $noCheckpoint, 'timestamp' => 0];
   }
 }
 

@@ -24,7 +24,7 @@ export default class StateManager {
    */
   constructor(parent = mandatory('parent'), dataManager = null) {
     this._parent = parent
-    this._dataManager = dataManager
+    this.dataManager = dataManager
 
     /* --- Look for taskObject and setup RessourceManager accordingly --- */
     if (typeof parent.parentTaskObject !== 'undefined') {
@@ -107,7 +107,7 @@ export default class StateManager {
   }
 
   storeEvent(event = mandatory()) {
-    if (this._dataManager.constructor !== DataManager) {
+    if (this.dataManager.constructor !== DataManager) {
       throw new Error('StateManager.storeEvent: dataManager is not set, cannot store event.')
     }
 
@@ -133,8 +133,8 @@ export default class StateManager {
         event.stored = true
 
         debuglog('StateManager.storeEvent: storing event.')
-        // this._dataManager.log(belongsTo[i], event)
-        this._dataManager.addRows(belongsTo[i], event.formatted)
+        // this.dataManager.log(belongsTo[i], event)
+        this.dataManager.addRows(belongsTo[i], event.formatted)
         debuglog('StateManager.storeEvent: event stored.', event)
       } catch (error) {
         debugError(`StateManager.storeEvent: Could not store data in ${belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
@@ -144,7 +144,7 @@ export default class StateManager {
   }
 
   storeData(data = mandatory()) {
-    if (this._dataManager.constructor !== DataManager) {
+    if (this.dataManager.constructor !== DataManager) {
       throw new Error('StateManager.storeData: dataManager is not set, cannot store event.')
     }
 
@@ -156,7 +156,7 @@ export default class StateManager {
     data.storedInErrorLog = false
     for (let i = 0; i < data.belongsTo.length; i++) {
       try {
-        this._dataManager.addRows(data.belongsTo[i], data)
+        this.dataManager.addRows(data.belongsTo[i], data)
       } catch (error) {
         console.error(`StateManager: Could not store data in ${data.belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
         this.storeInErrorLog(data)
@@ -558,7 +558,7 @@ export default class StateManager {
 
     debuglog('StateManager.stateHasFinishedHandlingEvent: event was handled.')
 
-    if (this._dataManager.constructor === DataManager) {
+    if (this.dataManager.constructor === DataManager) {
       this.storeEvent(event)
     } else {
       debugWarn('StateManager.stateHasFinishedHandlingEvent: dataManager is not set, not storing event.')
@@ -809,7 +809,7 @@ export default class StateManager {
     }
     return ({
       taskObject: null,
-      dataManager: this._dataManager,
+      dataManager: this.dataManager,
       scene: this._parent, // TODO Force the ._parent to be the .scene ?
       stateManager: this,
       state: this.currentState,

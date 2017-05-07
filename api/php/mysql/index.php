@@ -48,6 +48,8 @@
     // Connect to the db
     $bdd = connect_to_db();
 
+    // Look for credentials
+    $userId = null;
     $credentials = $data['credentials'];
     if ($data['query'] === $_QUERY_LOGIN) {
       $logged = login($bdd, $data['credentials']);
@@ -69,7 +71,6 @@
       // TODO Should we use an OAuth library.. ?
       // http://bshaffer.github.io/oauth2-server-php-docs/cookbook/
       $accredited = is_accredited($bdd, ['userId' => $userId, 'logKey' => $logKey]);
-      $result['state'] = 1;
 
       if (!$accredited) {
         $shouldLog = true;
@@ -97,25 +98,25 @@
             throw new Exception("Invalid table " .json_encode($table), 1);
           }
 
-          add_rows($bdd, $table, $rows);
-          $result = ['status' => 'OK', 'Rows added' => json_encode($rows)];
+          $rowsAdded = add_rows($bdd, $table, $rows);
+          $result = ['status' => 'OK', 'Rows added' => json_encode($rowsAdded)];
         }
 
         // Checkpoints endpoint
-        if ($query === "getCheckpoints") {
-          if (($variables === null) || (!isset($variables['userId']))) {
-            throw new Exception("Invalid data", 1);
-          }
-          $userId = $variables['userId'];
-          $results = get_checkpoints($bdd, $userId);
+        if ($query === "getCheckpoint") {
+          $checkpoint = get_checkpoint($bdd, $userId);
+          $result = ['status' => 'OK'] + $checkpoint;
         }
 
         if ($query === "setCheckpoints") {
-          if (($variables === null) || (!isset($variables['userId']))) {
-            throw new Exception("Invalid data", 1);
-          }
-          $userId = $variables['userId'];
-          // TODO $results = set_checkpoints($bdd, $userId);
+          // treat this as a normal row hanled by add row
+        }
+
+        if ($query === 'get') {
+          // general endpoint to select information from db
+          // limited to the userId
+          // is it usefull ? ..probably not
+
         }
       }
 

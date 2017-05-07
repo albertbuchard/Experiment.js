@@ -99,6 +99,7 @@ export default class DataManager {
     this.QUERY_ADD = 'add'
     this.QUERY_GET_CHECKPOINT = 'getCheckpoints'
     this.QUERY_SET_CHECKPOINT = 'setCheckpoint'
+    this.MAX_NUMBER_OF_RETRY = 5
 
     /**
      * Boolean if set to true, credentials returned from the server are stored in the local storage
@@ -464,6 +465,11 @@ export default class DataManager {
 
   /* ======= Credentials ======= */
   login(connection = mandatory(), variables = null, deferred = new Deferred()) {
+    if (deferred.status > this.MAX_NUMBER_OF_RETRY) {
+      deferred.reject('DataManager.login: login failure - reach max retry.')
+    }
+    deferred.status += 1
+
     // an interface needs to have a login endpoint to be used in this function
     // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
     if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
@@ -504,6 +510,60 @@ export default class DataManager {
 
     return deferred.promise
   }
+
+  /* ======= Checkpoints ======= */
+  query(query = mandatory(), variables = {}, connection = null, deferred = new Deferred()) {
+    if (deferred.status > this.MAX_NUMBER_OF_RETRY) {
+      deferred.reject('DataManager.query: query failure - reach max retry.', query)
+    }
+    deferred.status += 1
+
+    if (connection === null) {
+      if (this.connections.length > 0) {
+        connection = this.connections[0]
+      } else {
+        deferred.reject('DataManager.query: no valid connection available.')
+      }
+    }
+
+    if (connection.type === this.INTERFACE_REST) {
+      // build the data object to send
+      const data = {
+        interface: connection.type,
+        credentials: connection.credentials,
+        query,
+        variables,
+      }
+
+      // send the data through ajax in json format
+      $.ajax({
+        url: connection.endpoint,
+        type: 'POST',
+        data: JSON.stringify(data),
+        contentType: 'application/json',
+      })
+      .done((data, status) => {
+        // once the ajax call is done, check status of http
+        debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
+        deferred.resolve(data)
+      })
+      .fail((xhr) => {
+        const json = xhr.responseJSON || { message: '', shouldLog: false }
+        if (json.shouldLog) {
+          debugError('DataManager.push: user is not logged in -- will call the log function.')
+          this.login(connection).then(() => { this.query(query, variables, connection, deferred) })
+        } else {
+          debugError('DataManager.push: could not perform query -- will retry', json.stringify(query), json.message)
+          this.query(query, variables, connection, deferred)
+        }
+      })
+    } else {
+      deferred.reject('DataManager.query: unsupported connection.')
+    }
+
+    return deferred.promise
+  }
+
   /* ======= Push ======= */
 
   /**
@@ -573,6 +633,8 @@ export default class DataManager {
       if (format === 'dataArray') {
         const row = {}
         for (const field of fields) {
+          if (field === 'id') continue
+
           if (dataTable[field].length <= i) {
             throw new Error(`DataManager.toDataArray: field array ${field} is of invalid size.`)
           }
@@ -582,6 +644,8 @@ export default class DataManager {
         data.push(row)
       } else {
         for (const field of fields) {
+          if (field === 'id') continue
+
           if (!data.hasOwnProperty(field)) {
             data[field] = []
           }
@@ -655,6 +719,7 @@ export default class DataManager {
   }
 
   setConnection(variables = mandatory()) {
+    const deferred = new Deferred()
     if ((!variables.hasOwnProperty('type')) || (variables.type === this.INTERFACE_REST)) {
       const defaultVariables = {
         type: this.INTERFACE_REST,
@@ -673,14 +738,21 @@ export default class DataManager {
 
         if (connection.credentials !== null) {
           this.login(connection, connection.credentials)
-          .then(() => { this.connections.push(connection) })
+          .then(() => {
+            this.connections.push(connection)
+            deferred.resolve(connection)
+          })
         } else {
           this.connections.push(connection)
+          deferred.resolve(connection)
         }
       } else {
-        throw new Error('DataManager.setInterface: needs at least an endpoint.')
+        deferred.reject('DataManager.setInterface: needs at least an endpoint.')
       }
+    } else {
+      deferred.reject('DataManager.setInterface: unsupported connection type.')
     }
+    return deferred.promise
   }
 
   /* ======== Getters and setters ======== */

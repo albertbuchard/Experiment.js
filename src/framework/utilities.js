@@ -131,15 +131,26 @@ function recurse(promiseGenerator = mandatory(),
 function Deferred() {
   this.resolve = null
   this.reject = null
-
+  this.resolved = false
+  this.rejected = false
+  this.status = 0
   /* A newly created Pomise object.
    * Initially in pending state.
    */
   this.promise = new Promise((resolve, reject) => {
-    this.resolve = resolve
-    this.reject = reject
+    this.resolve = (data) => {
+      this.resolved = true
+      resolve(data)
+    }
+    this.reject = (e) => {
+      this.rejected = true
+      if (e.constructor === String) {
+        e = new Error(e)
+      }
+      reject(e)
+    }
   })
-  Object.freeze(this)
+  // Object.freeze(this)
 }
 
 /**

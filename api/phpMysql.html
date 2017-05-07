@@ -45,7 +45,7 @@
 
     taskObject.startTask().then((message) => {
       console.log(message)
-      taskObject.dataManager.setConnection({ endpoint: './php/mysql/index.php', credentials: { userId: 'John', password: 'az4444' } })
+      taskObject.setConnection({ endpoint: './php/mysql/index.php', credentials: { userId: 'John', password: 'az4444' } })
     })
 
     window.taskObject = taskObject

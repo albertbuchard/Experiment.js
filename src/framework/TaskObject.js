@@ -28,6 +28,7 @@ import {
   mandatory,
   debuglog,
   debugWarn,
+  debugError,
   mustHaveConstructor,
   delay,
 } from './utilities'
@@ -85,6 +86,13 @@ export default class TaskObject {
      */
     this.dataManager = new DataManager(this)
 
+    /**
+     * The main connection object in the dataManager used by the TaskObject.
+     * It is set when using this.setConnection() which is a wrapper for the dataManager function
+     * @type {Object}
+     */
+    this.connection = null
+
     /* --- Add global mouse and keyboard event tables --- */
     const globalLogFields = this.dataManager.GLOBAL_LOG_FIELDS
 
@@ -100,6 +108,10 @@ export default class TaskObject {
     /* --- Add raised flags --- */
     const statusFlagsFields = ['flag', 'happenedAt']
     this.dataManager.addTable('statusFlags', statusFlagsFields)
+
+    /* --- Add the checkpoint table --- */
+    const checkpointFields = ['code', 'happenedAt']
+    this.dataManager.addTable('checkpoints', checkpointFields)
 
     /* --- Assets --- */
     /**
@@ -827,6 +839,38 @@ export default class TaskObject {
     })
 
     return (scene)
+  }
+
+  /* ======= dataManager ======= */
+  setConnection(variables = mandatory()) {
+    if (!this.dataManager) {
+      throw new Error('StateManager.setCheckpoint: no dataManager')
+    }
+
+    this.dataManager.setConnection(variables)
+    .then((connection) => { this.connection = connection })
+    .catch((error) => { debugError(error) })
+  }
+
+  setCheckpoint(code = mandatory()) {
+    // store the whole object in the db ? ... probably not or.. ? it might be a great idea
+    // we need to save the current state name, the non object globals,
+    // and the events in store, we also have to store the state globals
+    // to restore we load the past state.. .hm might be too complicated
+
+    if (!this.dataManager) {
+      throw new Error('StateManager.setCheckpoint: no dataManager')
+    }
+
+    this.dataManager.addRows('checkpoints', { code, happenedAt: this.timeInMs })
+  }
+
+  getCheckpoint() {
+    if (!this.dataManager) {
+      throw new Error('StateManager.getCheckpoint: no dataManager')
+    }
+
+    return this.dataManager.query('getCheckpoint', {}, this.connection)
   }
 
   /* ======= Context ======= */
