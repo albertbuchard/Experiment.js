@@ -110,19 +110,18 @@ export default class RessourceManager {
       type: 'GET',
       url: this.files[fileIndex].path,
       crossDomain: true,
-    })
-      .done((data, textStatus, jqXHR) => {
-        thisObject.files[fileIndex].loaded = true
-        thisObject.files[fileIndex].raw = data
+    }).done((data, textStatus, jqXHR) => {
+      thisObject.files[fileIndex].loaded = true
+      thisObject.files[fileIndex].raw = data
 
-        try {
-          thisObject.parseRaw(fileIndex)
-        } catch (e) {
-          deffered.reject(e)
-        } finally {
-          deffered.resolve(`RessourceManager.loadFile: ${thisObject.files[fileIndex].path} parsed`)
-        }
-      })
+      try {
+        thisObject.parseRaw(fileIndex)
+      } catch (e) {
+        deffered.reject(e)
+      } finally {
+        deffered.resolve(`RessourceManager.loadFile: ${thisObject.files[fileIndex].path} parsed`)
+      }
+    })
 
     return deffered.promise
   }
