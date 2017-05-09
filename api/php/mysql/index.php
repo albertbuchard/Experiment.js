@@ -1,15 +1,17 @@
 <?php
-
+  ini_set('display_errors', 0);
   require_once 'vendor/autoload.php';
   require_once './utilities.php';
 
+
+  /*
   use GraphQL\GraphQL;
   use \GraphQL\Schema;
   use \GraphQL\Type\Definition\Config;
   use \GraphQL\Error\FormattedError;
   // use \Exception;
 
-  //ini_set('display_errors', 0);
+  //
 
   if (!empty($_GET['debug'])) {
     // Enable additional validation of type configs
@@ -22,6 +24,7 @@
         $phpErrors[] = new ErrorException($message, 0, $severity, $file, $line);
     });
   }
+  */
 
   $accredited = false;
   $shouldLog = false;
