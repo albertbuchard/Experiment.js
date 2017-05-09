@@ -20,6 +20,8 @@
     "assets/experiment-js-light.svg",
     "lib/",
     "test/",
+    "examples/",
+    "api/",
     "min.js",
     "README.md"
   ],

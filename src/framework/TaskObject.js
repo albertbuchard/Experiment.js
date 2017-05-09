@@ -814,6 +814,7 @@ export default class TaskObject {
 
     /* --- Resize handler --- */
     const updateContentFrame = function () {
+      // this refers to the scene here
       if (customSized) {
         this.initialCanvas.resizeAt = this.parentTaskObject.timeInMs + 1000
         delay(1100).then(() => {
@@ -822,8 +823,17 @@ export default class TaskObject {
             const { size: customSized } = getCanvasDimensions()
             debugWarn('scene.updateContentFrame: window has been resized ', customSized)
             this.initialCanvas.size = customSized
-            if ((typeof scene.onResize !== 'undefined') && (scene.onResize.constructor === Function)) {
-              scene.onResize.bind(this.parentTaskObject.context)()
+
+            // check if the user has defined custom resize functions
+            if (typeof this.onResize !== 'undefined') {
+              if (this.onResize.constructor === Function) {
+                this.onResize = [this.onResize]
+              }
+
+              for (const f of this.onResize) {
+                if (f.constructor !== Function) continue
+                f.bind(this.parentTaskObject.context)()
+              }
             }
           }
         })
@@ -832,6 +842,13 @@ export default class TaskObject {
 
 
     scene.updateContentFrame = updateContentFrame
+
+    /**
+     * Custom resize functions called by updateContentFrame. Can be set by the user
+     * to perform scene updates on resize. Can be an array of function or a single function.
+     * @type {!function|array}
+     */
+    scene.onResize = null
 
     /* Scene update */
     scene.registerBeforeRender(() => {
