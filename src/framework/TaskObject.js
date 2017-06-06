@@ -1111,18 +1111,24 @@ export default class TaskObject {
    */
   modal({ type = 'centralLarge', title = '', content = '', event = new EventData(this.R.get.events_modalDismissed) }) {
     this.currentModal = { data: { type, title, content, event } }
+    const deferred = new Deferred()
+
+    this.currentModal.deferred = deferred
 
     const modalBox = new SmartModal(type, function dismissed() {
       if ((event.constructor === EventData) && (this.stateManager !== null)) {
         this.stateManager.addEvent(event)
-        this.taskObject.currentModal = null
       }
+
+      this.taskObject.currentModal.deferred.resolve('Modal closed.')
+      this.taskObject.currentModal = null
     }.bind(this.context))
 
     modalBox.title = title
     modalBox.content = content
 
     this.currentModal.modalBox = modalBox
+    return deferred.promise
   }
 
 

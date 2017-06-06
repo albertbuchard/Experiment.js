@@ -1,11 +1,11 @@
 <?php
   ini_set('display_errors', 0);
-  require_once 'vendor/autoload.php';
   require_once './utilities.php';
 
 
   /*
-  use GraphQL\GraphQL;
+  require_once 'vendor/autoload.php';
+
   use \GraphQL\Schema;
   use \GraphQL\Type\Definition\Config;
   use \GraphQL\Error\FormattedError;

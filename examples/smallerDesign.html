@@ -92,6 +92,7 @@
         })
 
         this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes', event: new EventData('caca', { forState: 'pipi' }) })
+        .then(() => { console.log('Life is like a box of chocolate')})
       })
 
       scene.stateManager.states.active.addEndingFunctions(function ending() {
