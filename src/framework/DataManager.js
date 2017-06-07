@@ -467,46 +467,48 @@ export default class DataManager {
   login(connection = mandatory(), variables = null, deferred = new Deferred()) {
     if (deferred.status > this.MAX_NUMBER_OF_RETRY) {
       deferred.reject('DataManager.login: login failure - reach max retry.')
-    }
-    deferred.status += 1
+    } else {
+      deferred.status += 1
 
-    // an interface needs to have a login endpoint to be used in this function
-    // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
-    if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
-      if (variables === null) {
-        return this.login(connection, { userId: 'John', password: 'az4444' }, deferred)// call a smartForm modal with userId and password
-      }
-        // perform ajax with the variables as credentials
-      const data = {
-        interface: connection.type,
-        credentials: variables,
-        query: connection.login,
-      }
+      // an interface needs to have a login endpoint to be used in this function
+      // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
+      if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
+        if (variables === null) {
+          return this.login(connection, { userId: 'John', password: 'az4444' }, deferred)// call a smartForm modal with userId and password
+        }
+          // perform ajax with the variables as credentials
+        const data = {
+          interface: connection.type,
+          credentials: variables,
+          query: connection.login,
+        }
 
-        // send the data through ajax in json format
-      $.ajax({
-        url: connection.endpoint,
-        type: 'POST',
-        data: JSON.stringify(data),
-        contentType: 'application/json',
-      })
-        .done(function done(data, status) {
-          // if success set credentials inside the connection
-          connection.credentials = data.credentials
-          if (this.useLocalStorageCredentials) {
-            this.local(connection.name, { credentials: data.credentials })
-          }
-          debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
-          deferred.resolve()
-        }.bind(this))
-        .fail(function (connection, xhr) {
-          // if failure call login with no variables to call a smartForm
-          const json = xhr.responseJSON
-          const message = json.message || ''
-          debugError(`DataManager.push: error during login with message ${message}`)
-          this.login(connection, null, deferred)
-        }.bind(this, connection))
+          // send the data through ajax in json format
+        $.ajax({
+          url: connection.endpoint,
+          type: 'POST',
+          data: JSON.stringify(data),
+          contentType: 'application/json',
+        })
+          .done(function done(data, status) {
+            // if success set credentials inside the connection
+            connection.credentials = data.credentials
+            if (this.useLocalStorageCredentials) {
+              this.local(connection.name, { credentials: data.credentials })
+            }
+            debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
+            deferred.resolve()
+          }.bind(this))
+          .fail(function (connection, xhr) {
+            // if failure call login with no variables to call a smartForm
+            const json = xhr.responseJSON
+            const message = json.message || ''
+            debugError(`DataManager.push: error during login with message ${message}`)
+            this.login(connection, null, deferred)
+          }.bind(this, connection))
+      }
     }
+
 
     return deferred.promise
   }
@@ -515,51 +517,53 @@ export default class DataManager {
   query(query = mandatory(), variables = {}, connection = null, deferred = new Deferred()) {
     if (deferred.status > this.MAX_NUMBER_OF_RETRY) {
       deferred.reject('DataManager.query: query failure - reach max retry.', query)
-    }
-    deferred.status += 1
-
-    if (connection === null) {
-      if (this.connections.length > 0) {
-        connection = this.connections[0]
-      } else {
-        deferred.reject('DataManager.query: no valid connection available.')
-      }
-    }
-
-    if (connection.type === this.INTERFACE_REST) {
-      // build the data object to send
-      const data = {
-        interface: connection.type,
-        credentials: connection.credentials,
-        query,
-        variables,
-      }
-
-      // send the data through ajax in json format
-      $.ajax({
-        url: connection.endpoint,
-        type: 'POST',
-        data: JSON.stringify(data),
-        contentType: 'application/json',
-      })
-      .done((data, status) => {
-        // once the ajax call is done, check status of http
-        debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
-        deferred.resolve(data)
-      })
-      .fail((xhr) => {
-        const json = xhr.responseJSON || { message: '', shouldLog: false }
-        if (json.shouldLog) {
-          debugError('DataManager.push: user is not logged in -- will call the log function.')
-          this.login(connection).then(() => { this.query(query, variables, connection, deferred) })
-        } else {
-          debugError('DataManager.push: could not perform query -- will retry', json.stringify(query), json.message)
-          this.query(query, variables, connection, deferred)
-        }
-      })
     } else {
-      deferred.reject('DataManager.query: unsupported connection.')
+      deferred.status += 1
+
+      if (connection === null) {
+        if (this.connections.length > 0) {
+          connection = this.connections[0]
+        } else {
+          deferred.reject('DataManager.query: no valid connection available.')
+        }
+      }
+
+      if (connection.type === this.INTERFACE_REST) {
+        // build the data object to send
+        const data = {
+          interface: connection.type,
+          credentials: connection.credentials,
+          query,
+          variables,
+        }
+
+        // send the data through ajax in json format
+        $.ajax({
+          url: connection.endpoint,
+          type: 'POST',
+          data: JSON.stringify(data),
+          contentType: 'application/json',
+        })
+        .done((data, status) => {
+          // once the ajax call is done, check status of http
+          debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
+          deferred.resolve(data)
+        })
+        .fail((xhr) => {
+          const json = xhr.responseJSON || { message: '', shouldLog: false }
+          if (json.shouldLog) {
+            debugError('DataManager.push: user is not logged in -- will call the log function.')
+            this.login(connection).then(() => { this.query(query, variables, connection, deferred) })
+          } else {
+            debugError('DataManager.push: could not perform query -- will retry', json.stringify(query), json.message)
+            this.query(query, variables, connection, deferred)
+          }
+        })
+      } else {
+        deferred.reject('DataManager.query: unsupported connection.')
+      }
     }
+
 
     return deferred.promise
   }
