@@ -45,6 +45,7 @@
    spreadToObject,
    sizeToVec,
    scaleSize,
+   hasConstructor,
  } from './src/framework/utilities'
 
 
@@ -94,4 +95,5 @@
   spreadToObject,
   sizeToVec,
   scaleSize,
+  hasConstructor,
 }

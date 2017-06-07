@@ -99,6 +99,14 @@ function mustHaveConstructor(constructorObject, ...args) {
   return true
 }
 
+function hasConstructor(constructorObject, ...args) {
+  if (args.allHaveConstructor(constructorObject) === false) {
+    return false
+  }
+
+  return true
+}
+
 /**
  * Returns true if o looks like a promise. From the es-promisify package.
  * https://github.com/digitaldesignlabs/es6-promisify/
@@ -745,4 +753,5 @@ export {
   spreadToObject,
   sizeToVec,
   scaleSize,
+  hasConstructor,
 }
