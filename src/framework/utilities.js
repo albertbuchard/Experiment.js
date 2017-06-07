@@ -53,7 +53,7 @@ function mandatory(param = '') {
 function mustBeDefined(...args) {
   for (let i = 0; i < args.length; i++) {
     if (typeof args[i] === 'undefined') {
-      throw new Error(`Argument ${i} is undefined.`)
+      throw new Error(`Argument ${i} is undefined.`) // TODO transform that into debugError...
     }
   }
 

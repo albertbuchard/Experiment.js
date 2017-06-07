@@ -144,18 +144,22 @@ export default class DataManager {
    * @param {[type]} fields [description]
    */
   addTable(name = mandatory(), fields = mandatory()) {
-    if (_.has(this.dataTables, name)) {
-      throw new Error(`DataManager.addTable: Data table with name '${name}' already exists`)
-    }
+    try {
+      if (_.has(this.dataTables, name)) {
+        throw new Error(`DataManager.addTable: Data table with name '${name}' already exists`)
+      }
 
-    /* --- Create the dataTable object and define the fields --- */
-    this.dataTables[name] = {}
-    for (let i = 0; i < fields.length; i++) {
-      this.dataTables[name][fields[i]] = []
-    }
+      /* --- Create the dataTable object and define the fields --- */
+      this.dataTables[name] = {}
+      for (let i = 0; i < fields.length; i++) {
+        this.dataTables[name][fields[i]] = []
+      }
 
-    if (_.indexOf(fields, 'id') === -1) {
-      this.dataTables[name].id = []
+      if (_.indexOf(fields, 'id') === -1) {
+        this.dataTables[name].id = []
+      }
+    } catch (e) {
+      debugError(e)
     }
   }
 
@@ -181,7 +185,8 @@ export default class DataManager {
     if (this.tableNames.has(name)) {
       return new Set(Object.keys(this.dataTables[name]))
     }
-    throw new Error('DataManager.fieldNames: unknown table.')
+    debugError('DataManager.fieldNames: unknown table.')
+    return null
   }
 
   /**
@@ -226,20 +231,25 @@ export default class DataManager {
    * @return {array}             Range of ids
    */
   generateIds(name = mandatory(), numberOfIds = 1) {
-    if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager.generateIds: Data table with name '${name}' does not exists`)
-    }
+    try {
+      if (!(_.has(this.dataTables, name))) {
+        throw new Error(`DataManager.generateIds: Data table with name '${name}' does not exists`)
+      }
 
-    if (!(_.has(this.dataTables[name], 'id'))) {
-      throw new Error(`DataManager.generateIds: Data table with name '${name}' does not have an 'id' field`)
-    }
+      if (!(_.has(this.dataTables[name], 'id'))) {
+        throw new Error(`DataManager.generateIds: Data table with name '${name}' does not have an 'id' field`)
+      }
 
-    let startId = 0
-    if (this.dataTables[name].id.length !== 0) {
-      startId = _.max(this.dataTables[name].id) + 1
-    }
+      let startId = 0
+      if (this.dataTables[name].id.length !== 0) {
+        startId = _.max(this.dataTables[name].id) + 1
+      }
 
-    return (_.range(startId, startId + numberOfIds))
+      return (_.range(startId, startId + numberOfIds))
+    } catch (e) {
+      debugError(e)
+      return null
+    }
   }
 
   /**
@@ -250,7 +260,8 @@ export default class DataManager {
    */
   getEmptyRow(name = mandatory()) {
     if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager.getEmptyRow: Data table with name '${name}' does not exists`)
+      debugError(`DataManager.getEmptyRow: Data table with name '${name}' does not exists`)
+      return null
     }
 
     const emptyTable = {}
@@ -324,11 +335,13 @@ export default class DataManager {
     // TODO discuss creating a class representing rows in a formalized way
     if (rows.constructor === Array) {
       if (rows.length === 0) {
-        throw new Error('DataManager.toDataObject: rows is empty.')
+        debugError('DataManager.toDataObject: rows is empty.')
+        return null
       }
 
       if (rows[0].constructor !== Object) {
-        throw new Error('DataManager.toDataObject: dataArray rows are invalid.')
+        debugError('DataManager.toDataObject: dataArray rows are invalid.')
+        return null
       }
 
       const fields = Object.keys(rows[0])
@@ -351,7 +364,8 @@ export default class DataManager {
     if (this.isValidRows(rows, name)) {
       return rows
     }
-    throw new Error('DataManager.toDataObject: Row is of invalid format.')
+    debugError('DataManager.toDataObject: Row is of invalid format.')
+    return null
   }
 
   /**
@@ -371,7 +385,8 @@ export default class DataManager {
         // TODO do a isValidDataArray function that test every row against the table fields
         return rows
       }
-      throw new Error('DataManager.toDataArray: Row is of invalid format.')
+      debugError('DataManager.toDataArray: Row is of invalid format.')
+      return null
     }
 
     if (this.isValidRows(rows, name)) {
@@ -382,7 +397,8 @@ export default class DataManager {
         const row = {}
         for (const field of fields) {
           if (rows[field].length <= i) {
-            throw new Error(`DataManager.toDataArray: field array ${field} is of invalid size.`)
+            debugError(`DataManager.toDataArray: field array ${field} is of invalid size.`)
+            return null
           }
           row[field] = rows[field][i]
         }
@@ -391,13 +407,15 @@ export default class DataManager {
 
       return dataArray
     }
-    throw new Error('DataManager.toDataArray: Row is of invalid format.')
+    debugError('DataManager.toDataArray: Row is of invalid format.')
+    return null
   }
 
   toCsv(data = null, format = 'dataObject') {
     if (data.constructor === String) {
       if (!(this.hasTable(name))) {
-        throw new Error(`DataManager.toCsv: Data table with name '${name}' does not exists`)
+        debugError(`DataManager.toCsv: Data table with name '${name}' does not exists`)
+        return null
       }
       data = this.dataTables[data]
     }
@@ -617,52 +635,59 @@ export default class DataManager {
 
   getStagedData(table = mandatory(), format = 'dataArray') {
     // check that the table is valid
-    if (!this.tableNames.has(table)) {
-      throw new Error('DataManager.getStagedData: unknown table.')
-    }
-
-    // check if we have a last index, if not set it to 0
-    if (Object.keys(this.tablesLastIndex).indexOf(table) === -1) {
-      this.tablesLastIndex[table] = 0
-    }
-
-    const dataTable = this.dataTables[table]
-    const fields = this.fieldNames(table)
-    const numRows = dataTable[fields.sample()].length
-    const lastIndex = this.tablesLastIndex[table]
-
-    // create a new array with the unpushed data (without cloning the parent array)
-    const data = format === 'dataArray' ? [] : {}
-    let j = 0
-    for (let i = lastIndex; i < numRows; i++) {
-      if (format === 'dataArray') {
-        const row = {}
-        for (const field of fields) {
-          if (field === 'id') continue
-
-          if (dataTable[field].length <= i) {
-            throw new Error(`DataManager.toDataArray: field array ${field} is of invalid size.`)
-          }
-          row[field] = dataTable[field][i]
-        }
-
-        data.push(row)
-      } else {
-        for (const field of fields) {
-          if (field === 'id') continue
-
-          if (!data.hasOwnProperty(field)) {
-            data[field] = []
-          }
-          if (dataTable[field].length <= i) {
-            throw new Error(`DataManager.getStagedData: field ${field} of invalid size in the DataManager.`)
-          }
-          data[field][j].push(dataTable[field][i])
-        }
-        j += 1
+    let returned = [[], 0]
+    try {
+      if (!this.tableNames.has(table)) {
+        throw new Error('DataManager.getStagedData: unknown table.')
       }
+
+      // check if we have a last index, if not set it to 0
+      if (Object.keys(this.tablesLastIndex).indexOf(table) === -1) {
+        this.tablesLastIndex[table] = 0
+      }
+
+      const dataTable = this.dataTables[table]
+      const fields = this.fieldNames(table)
+      const numRows = dataTable[fields.sample()].length
+      const lastIndex = this.tablesLastIndex[table]
+
+      // create a new array with the unpushed data (without cloning the parent array)
+      const data = format === 'dataArray' ? [] : {}
+      let j = 0
+      for (let i = lastIndex; i < numRows; i++) {
+        if (format === 'dataArray') {
+          const row = {}
+          for (const field of fields) {
+            if (field === 'id') continue
+
+            if (dataTable[field].length <= i) {
+              throw new Error(`DataManager.toDataArray: field array ${field} is of invalid size.`)
+            }
+            row[field] = dataTable[field][i]
+          }
+
+          data.push(row)
+        } else {
+          for (const field of fields) {
+            if (field === 'id') continue
+
+            if (!data.hasOwnProperty(field)) {
+              data[field] = []
+            }
+            if (dataTable[field].length <= i) {
+              throw new Error(`DataManager.getStagedData: field ${field} of invalid size in the DataManager.`)
+            }
+            data[field][j].push(dataTable[field][i])
+          }
+          j += 1
+        }
+      }
+      returned = [data, numRows]
+    } catch (e) {
+      debugError(e)
+    } finally {
+      return returned
     }
-    return [data, numRows]
   }
 
   push() {
