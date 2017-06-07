@@ -604,11 +604,11 @@ export default class DataManager {
     this.toPush.unite(names)
     if (!this.waitForPush) {
       this.waitForPush = true
-      return delay(this.addRate).then(() => {
+      delay(this.addRate).then(() => {
         this.push()
       })
     }
-    return Promise.resolve()
+    // return Promise.resolve()
   }
 
   getStagedData(table = mandatory(), format = 'dataArray') {

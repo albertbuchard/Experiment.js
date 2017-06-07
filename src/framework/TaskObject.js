@@ -1131,7 +1131,6 @@ export default class TaskObject {
     return deferred.promise
   }
 
-
   /* === Animation helpers === */
   animateFloat(object, property, from, to) {
     const keys = [{

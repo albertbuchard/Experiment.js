@@ -8,7 +8,12 @@ import RessourceManager from './RessourceManager'
 import State from './State'
 import DataManager from './DataManager'
 import EventData from './EventData'
-import { mandatory, debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor } from './utilities'
+import { mandatory,
+  debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor,
+  spreadToObject, Deferred, delay,
+  sizeToVec,
+  scaleSize,
+} from './utilities'
 
 /**
  * Manage lifecycle and variables through State objects.
@@ -248,6 +253,119 @@ export default class StateManager {
     this.set('GUI', GUI)
 
     return GUI
+  }
+
+  // TODO tooltip on the GUI to highlight specific positions
+  tooltip({ position = null, size = null, spaced = null, text = '', fontName = '14pt Verdana', duration = null, background = null, fontColor = null }) {
+    // Set the default
+    spaced = spreadToObject(spaced, new BABYLON.Vector2(0, 0))
+    if ((duration === null) || (duration.constructor !== Promise)) {
+      if ((duration !== null) && (duration.constructor === Number)) {
+        duration = delay(duration)
+      } else {
+        duration = (new Deferred()).promise
+      }
+    }
+
+    const guiCanvas = this.get('GUI')
+    guiCanvas.levelVisible = true
+
+
+    let tooltip = this.get('tooltip')
+
+    let id = 0
+    if (tooltip === null) {
+      position = spreadToObject(position, new BABYLON.Vector2(0, 0))
+
+      const sizeDefault = spreadToObject(size, new BABYLON.Size(300, 300))
+
+      const normalColor = [202 / 255, 64 / 255, 0, 0.95]
+      const brownColor = [112 / 255, 102 / 255, 98 / 255, 0.95]
+      let fontSuperSample = true
+      let fontSignedDistanceField = false
+      if (background === null) {
+        fontSuperSample = false
+        fontSignedDistanceField = true
+      }
+      background = spreadToObject(background, new BABYLON.Color4(...brownColor))
+      fontColor = spreadToObject(fontColor, new BABYLON.Color4(1, 1, 1, 1))
+
+      const brush = BABYLON.Canvas2D.GetSolidColorBrush(background)
+
+      const tooltipBox = new BABYLON.Rectangle2D({
+        parent: guiCanvas,
+        id: 'tooltipBox',
+        // position: position.subtract(size.scale(0.5).add(spaced)),
+        width: sizeDefault.width,
+        height: sizeDefault.height,
+        // border: brush,
+        // borderThickness: 2,
+        fill: brush,
+      })
+
+      const tooltipText = new BABYLON.Text2D(text, {
+        parent: tooltipBox,
+        id: 'tooltipText',
+        marginAlignment: 'h: center, v:center',
+        defaultFontColor: fontColor,
+        fontSuperSample,
+        fontSignedDistanceField,
+        fontName,
+      })
+
+      if (size === null) {
+        tooltipBox.width = tooltipText.size.width + 24
+        tooltipBox.height = tooltipText.size.height + 24
+      }
+
+      tooltipBox.position = position.subtract(sizeToVec(tooltipBox.size).scale(0.5).add(spaced))
+
+
+      tooltip = { box: tooltipBox, text: tooltipText, promise: duration, id: 0 }
+
+      this.set('tooltip', tooltip)
+    } else {
+      tooltip.text.levelVisible = true
+      tooltip.box.levelVisible = true
+
+      tooltip.text.text = text
+
+      const tempPosition = tooltip.box.position.add(sizeToVec(tooltip.box.size).scale(0.5))
+      if (size === null) {
+        tooltip.box.width = tooltip.text.size.width + 24
+        tooltip.box.height = tooltip.text.size.height + 24
+      } else {
+        tooltip.box.width = size.width
+        tooltip.box.height = size.height
+      }
+
+
+      position = spreadToObject(position, tempPosition)
+      const nextPos = position.subtract(sizeToVec(tooltip.box.size).scale(0.5).add(spaced))
+      // TODO make a bounding function to make sure the tooltip is visible depending on the rendersize the position and size of the tooltip
+      tooltip.box.position = nextPos
+      tooltip.promise = duration
+
+      id = tooltip.id + 1
+      tooltip.id = id
+    }
+
+    duration.then(() => {
+      const currentTooltip = this.get('tooltip')
+      if ((currentTooltip !== null) && (currentTooltip.id === id)) {
+        this.hideTooltip()
+      }
+    })
+
+    return tooltip.promise
+  }
+
+  hideTooltip() {
+    const tooltip = this.get('tooltip')
+    if (tooltip !== null) {
+      tooltip.text.levelVisible = false
+      tooltip.box.levelVisible = false
+    }
   }
 
   /* === Pause State === */

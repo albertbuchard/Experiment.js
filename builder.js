@@ -42,6 +42,9 @@
    debugWarn,
    debugError,
    noop,
+   spreadToObject,
+   sizeToVec,
+   scaleSize,
  } from './src/framework/utilities'
 
 
@@ -88,4 +91,7 @@
   debugWarn,
   debugError,
   noop,
+  spreadToObject,
+  sizeToVec,
+  scaleSize,
 }

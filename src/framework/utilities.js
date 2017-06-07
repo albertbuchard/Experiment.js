@@ -10,6 +10,17 @@ import Promise from 'bluebird'
 
 import { DEBUG_MODE_ON } from '../config'
 
+Promise.config({
+    // Enable warnings
+  warnings: false,
+    // Enable long stack traces
+  longStackTraces: false,
+    // Enable cancellation
+  cancellation: false,
+    // Enable monitoring
+  monitoring: false,
+})
+
 /**
  * noop - just your friendly empty function
  *
@@ -47,6 +58,30 @@ function mustBeDefined(...args) {
   }
 
   return true
+}
+
+/**
+ * Creates a new object of class TargetClass = defaultValue.constructor from the object parameter, only if the object is not
+ * already an instance of TargetClass. If object is an array, the object is created like so new TargetClass(...object)
+ * @method spreadToObject
+ * @param  {Object|Array}       object      The object or array to be converted into TargetClass
+ * @param  {Object}       defaultValue      If the object is undefined or null this value is returned.
+ *                                          If not, the object is Transformed into the TargetClass which is defaultValue.constructor
+ * @return {[type]}                         Object of class TargetClass
+ */
+function spreadToObject(object, defaultValue) {
+  if ((typeof object === 'undefined') || (object === null)) {
+    return defaultValue
+  }
+
+  const TargetClass = defaultValue.constructor
+  if (object.constructor === TargetClass) {
+    return object
+  } else if (object.constructor === Array) {
+    return new TargetClass(...object)
+  }
+  debugWarn('spreadToObject: cannot spread to target class')
+  return defaultValue
 }
 
 /**
@@ -254,6 +289,24 @@ function diag(matrixObject = mandatory(), setTo = null): Array {
   }
 
   return ([diagonalValues, matrixObject])
+}
+
+/* ======= BABYLON HELPERS ======= */
+
+function sizeToVec(size = null) {
+  mustHaveConstructor(BABYLON.Size, size)
+  return (new BABYLON.Vector2(size.width, size.height))
+}
+
+function scaleSize(size = null, scale = 1) {
+  mustHaveConstructor(BABYLON.Size, size)
+
+  const floatScale = parseFloat(scale)
+  if (isNaN(floatScale)) {
+    throw new Error(`taskObject.scaleSize: scale is invalid ${scale}`)
+  }
+
+  return new BABYLON.Size(size.width * floatScale, size.height * floatScale)
 }
 
 /* ======= Number functions ======= */
@@ -529,7 +582,7 @@ Array.prototype.exclude = function exclude(values) {
 
 Array.prototype.allHaveConstructor = function allHaveConstructor(constructorObject) {
   for (let i = 0; i < this.length; i++) {
-    if (this[i].constructor !== constructorObject) {
+    if ((typeof this[i] === 'undefined') || (this[i] === null) || (this[i].constructor !== constructorObject)) {
       return false
     }
   }
@@ -689,4 +742,7 @@ export {
   debugWarn,
   debugError,
   noop,
+  spreadToObject,
+  sizeToVec,
+  scaleSize,
 }
