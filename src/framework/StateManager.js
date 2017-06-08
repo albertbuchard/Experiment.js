@@ -288,6 +288,7 @@ export default class StateManager {
     const guiCanvas = this.get('GUI')
     guiCanvas.levelVisible = true
 
+    const brownColor = [112 / 255, 102 / 255, 98 / 255, 0.95]
 
     let tooltip = this.get('tooltip')
 
@@ -298,13 +299,16 @@ export default class StateManager {
       const sizeDefault = spreadToObject(size, new BABYLON.Size(300, 300))
 
       // const normalColor = [202 / 255, 64 / 255, 0, 0.95]
-      const brownColor = [112 / 255, 102 / 255, 98 / 255, 0.95]
-      let fontSuperSample = true
-      let fontSignedDistanceField = false
-      if (background === null) {
-        fontSuperSample = false
-        fontSignedDistanceField = true
-      }
+
+      // let fontSuperSample = true
+      // let fontSignedDistanceField = false
+      // if (background === null) {
+      //   fontSuperSample = false
+      //   fontSignedDistanceField = true
+      // }
+
+      const fontSuperSample = false
+      const fontSignedDistanceField = true
       background = spreadToObject(background, new BABYLON.Color4(...brownColor))
       fontColor = spreadToObject(fontColor, new BABYLON.Color4(1, 1, 1, 1))
 
@@ -356,6 +360,16 @@ export default class StateManager {
         tooltip.box.width = size.width
         tooltip.box.height = size.height
       }
+
+      if (background !== null) {
+        background = spreadToObject(background, new BABYLON.Color4(...brownColor))
+        const brush = BABYLON.Canvas2D.GetSolidColorBrush(background)
+        tooltip.box.fill = brush
+      }
+
+      fontColor = spreadToObject(fontColor, new BABYLON.Color4(1, 1, 1, 1))
+
+      tooltip.text.defaultFontColor = fontColor
 
 
       position = spreadToObject(position, tempPosition)

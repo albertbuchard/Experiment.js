@@ -54,12 +54,14 @@
       const textTool = `You are connected as test\n{n}ms have elapsed.`
 
       const updateTooltip = function () {
-        taskObject.context.stateManager.tooltip({position: experiment.sizeToVec(taskObject.renderSize).subtract(new BABYLON.Vector2(200,50)), text: textTool.replace('{n}', taskObject.timeInMs - startedAt), duration: deferred.promise})
-        setTimeout(updateTooltip, 1000)
+        const background = _.sampleSize(_.range(0,1,0.1),3).concat(1)
+        const fontColor = _.sampleSize(_.range(0,1,0.1),3).concat(1)
+        taskObject.context.stateManager.tooltip({background, fontColor, position: experiment.sizeToVec(taskObject.renderSize).subtract(new BABYLON.Vector2(200,50)), text: textTool.replace('{n}', taskObject.timeInMs - startedAt), duration: deferred.promise})
+        if (!deferred.resolved) {setTimeout(updateTooltip, 100)}
       }
 
       updateTooltip()
-      setTimeout(deferred.resolve, 5000)
+      //setTimeout(deferred.resolve, 5000)
       tooltip.then(() => { console.log("This is the end of the tooltip baby.")})
     })
 
