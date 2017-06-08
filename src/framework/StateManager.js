@@ -274,7 +274,7 @@ export default class StateManager {
   }
 
   // TODO tooltip on the GUI to highlight specific positions
-  tooltip({ position = null, size = null, spaced = null, text = '', fontName = '14pt Verdana', duration = null, background = null, fontColor = null }) {
+  tooltip({ replace = true, position = null, size = null, spaced = null, text = '', fontName = '14pt Verdana', duration = null, background = null, fontColor = null }) {
     // Set the default
     spaced = spreadToObject(spaced, new BABYLON.Vector2(0, 0))
     if ((duration === null) || (duration.constructor !== Promise)) {
@@ -290,10 +290,65 @@ export default class StateManager {
 
     const brownColor = [112 / 255, 102 / 255, 98 / 255, 0.95]
 
-    let tooltip = this.get('tooltip')
+    let tooltips = this.get('tooltips', [])
+    if (tooltips.constructor === Object) {
+      tooltips = [tooltips]
+    }
+    const id = tooltips.length + 1
 
-    let id = 0
-    if (tooltip === null) {
+    let tooltip = null
+    if (replace && tooltips.length) {
+      tooltip = tooltips[tooltips.length - 1]
+    } else if (tooltips.length) {
+      for (const temptool of tooltips) {
+        if (typeof temptool.box !== 'undefined') {
+          temptool.box.zOrder = (id - temptool.id) * 0.01
+          temptool.text.zOrder = (id - temptool.id) * 0.01
+        }
+        if ((typeof temptool.disposed !== 'undefined') && (temptool.disposed)) {
+          temptool.box.zOrder = 0
+          temptool.text.zOrder = 0
+          tooltip = temptool
+
+          break
+        }
+      }
+    }
+
+
+    if (tooltip !== null) {
+      tooltip.text.levelVisible = true
+      tooltip.box.levelVisible = true
+
+      tooltip.text.text = text
+
+      const tempPosition = tooltip.box.position.add(sizeToVec(tooltip.box.size).scale(0.5))
+      if (size === null) {
+        tooltip.box.width = tooltip.text.size.width + 24
+        tooltip.box.height = tooltip.text.size.height + 24
+      } else {
+        tooltip.box.width = size.width
+        tooltip.box.height = size.height
+      }
+
+      if (background !== null) {
+        background = spreadToObject(background, new BABYLON.Color4(...brownColor))
+        const brush = BABYLON.Canvas2D.GetSolidColorBrush(background)
+        tooltip.box.fill = brush
+      }
+
+      fontColor = spreadToObject(fontColor, new BABYLON.Color4(1, 1, 1, 1))
+
+      tooltip.text.defaultFontColor = fontColor
+
+
+      position = spreadToObject(position, tempPosition)
+      const nextPos = position.subtract(sizeToVec(tooltip.box.size).scale(0.5).add(spaced))
+        // TODO make a bounding function to make sure the tooltip is visible depending on the rendersize the position and size of the tooltip
+      tooltip.box.position = nextPos
+      tooltip.promise = duration
+      tooltip.disposed = false
+    } else {
       position = spreadToObject(position, new BABYLON.Vector2(0, 0))
 
       const sizeDefault = spreadToObject(size, new BABYLON.Size(300, 300))
@@ -343,61 +398,42 @@ export default class StateManager {
       tooltipBox.position = position.subtract(sizeToVec(tooltipBox.size).scale(0.5).add(spaced))
 
 
-      tooltip = { box: tooltipBox, text: tooltipText, promise: duration, id: 0 }
-
-      this.set('tooltip', tooltip)
-    } else {
-      tooltip.text.levelVisible = true
-      tooltip.box.levelVisible = true
-
-      tooltip.text.text = text
-
-      const tempPosition = tooltip.box.position.add(sizeToVec(tooltip.box.size).scale(0.5))
-      if (size === null) {
-        tooltip.box.width = tooltip.text.size.width + 24
-        tooltip.box.height = tooltip.text.size.height + 24
-      } else {
-        tooltip.box.width = size.width
-        tooltip.box.height = size.height
-      }
-
-      if (background !== null) {
-        background = spreadToObject(background, new BABYLON.Color4(...brownColor))
-        const brush = BABYLON.Canvas2D.GetSolidColorBrush(background)
-        tooltip.box.fill = brush
-      }
-
-      fontColor = spreadToObject(fontColor, new BABYLON.Color4(1, 1, 1, 1))
-
-      tooltip.text.defaultFontColor = fontColor
+      tooltip = { box: tooltipBox, text: tooltipText, promise: duration, id, disposed: false }
 
 
-      position = spreadToObject(position, tempPosition)
-      const nextPos = position.subtract(sizeToVec(tooltip.box.size).scale(0.5).add(spaced))
-      // TODO make a bounding function to make sure the tooltip is visible depending on the rendersize the position and size of the tooltip
-      tooltip.box.position = nextPos
-      tooltip.promise = duration
-
-      id = tooltip.id + 1
-      tooltip.id = id
+      this.set('tooltips', tooltips.concat(tooltip))
     }
 
     duration.then(() => {
-      const currentTooltip = this.get('tooltip')
-      if ((currentTooltip !== null) && (currentTooltip.id === id)) {
-        this.hideTooltip()
+      if (tooltip.promise === duration) {
+        this.hideTooltip(tooltip)
       }
     })
 
     return tooltip.promise
   }
 
-  hideTooltip() {
-    const tooltip = this.get('tooltip')
-    if (tooltip !== null) {
-      tooltip.text.levelVisible = false
-      tooltip.box.levelVisible = false
+  hideTooltip(...tooltips) {
+    const allTooltips = this.get('tooltips')
+    if (tooltips.length === 0) {
+      tooltips = allTooltips
     }
+
+    // const newTooltips = []
+    for (const tooltip of allTooltips) {
+      if (tooltips.indexOf(tooltip) !== -1) {
+        if (typeof tooltip.box !== 'undefined') {
+          tooltip.box.levelVisible = false
+          tooltip.disposed = true // since dispose() is too slow, imitate the behavior by replacing old tooltip if necessary
+        }
+      }
+      // else {
+      //   newTooltips.push(tooltip)
+      // }
+    }
+    // allTooltips.length = 0
+
+    // this.set('tooltips', newTooltips)
   }
 
   /* === Pause State === */
