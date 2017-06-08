@@ -242,6 +242,31 @@ function samplePermutation(sequence = mandatory(), repetition = false, n = null)
   return (permutation)
 }
 
+/* ======= Loading ======= */
+function preloadImages(...images) { // TODO make it a RessourceManager function
+  const imgArray = []
+  const promiseArray = []
+  for (const image of images) {
+    if (image.constructor === String) {
+      const deferred = new Deferred()
+      const img = new Image()
+      img.src = image
+      imgArray.push(img)
+
+      img.onload = function () {
+        this.resolve()
+      }.bind(deferred)
+
+      promiseArray.push(deferred.promise)
+    } else {
+      debugError('preloadImages: invalid string url ', image)
+    }
+  }
+
+
+  return [Promise.all(promiseArray), imgArray]
+}
+
 /* =============== Personalized Matrix Functions =============== */
 function matrix(rows = mandatory(), cols = mandatory(), fill = 0) {
   const matrixObject = []
@@ -754,4 +779,5 @@ export {
   sizeToVec,
   scaleSize,
   hasConstructor,
+  preloadImages,
 }

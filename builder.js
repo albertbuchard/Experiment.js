@@ -46,6 +46,7 @@
    sizeToVec,
    scaleSize,
    hasConstructor,
+   preloadImages,
  } from './src/framework/utilities'
 
 
@@ -96,4 +97,5 @@
   sizeToVec,
   scaleSize,
   hasConstructor,
+  preloadImages,
 }
