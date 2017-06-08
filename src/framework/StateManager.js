@@ -414,7 +414,7 @@ export default class StateManager {
   }
 
   hideTooltip(...tooltips) {
-    const allTooltips = this.get('tooltips')
+    const allTooltips = this.get('tooltips', [])
     if (tooltips.length === 0) {
       tooltips = allTooltips
     }
