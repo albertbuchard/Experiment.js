@@ -306,7 +306,7 @@ export default class StateManager {
           temptool.text.zOrder = ((id - temptool.id) * 0.01) - 0.001
         }
         if ((typeof temptool.disposed !== 'undefined') && (temptool.disposed)) {
-          temptool.box.zOrder = 0
+          temptool.box.zOrder = 0.001
           temptool.text.zOrder = 0
           tooltip = temptool
           background = spreadToObject(background, new BABYLON.Color4(...brownColor))
