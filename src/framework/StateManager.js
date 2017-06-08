@@ -274,7 +274,7 @@ export default class StateManager {
   }
 
   // TODO tooltip on the GUI to highlight specific positions
-  tooltip({ replace = true, position = null, size = null, spaced = null, text = '', fontName = '14pt Verdana', duration = null, background = null, fontColor = null }) {
+  tooltip({ replace = false, position = null, size = null, spaced = null, text = '', fontName = '14pt Verdana', duration = null, background = null, fontColor = null }) {
     // Set the default
     spaced = spreadToObject(spaced, new BABYLON.Vector2(0, 0))
     if ((duration === null) || (duration.constructor !== Promise)) {
