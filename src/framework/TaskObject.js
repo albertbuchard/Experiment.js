@@ -826,7 +826,7 @@ export default class TaskObject {
             this.initialCanvas.size = customSized
 
             // check if the user has defined custom resize functions
-            if (typeof this.onResize !== 'undefined') {
+            if ((typeof this.onResize !== 'undefined') && (this.onResize !== null)) {
               if (this.onResize.constructor === Function) {
                 this.onResize = [this.onResize]
               }
