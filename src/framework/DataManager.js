@@ -9,6 +9,7 @@ import {
   debuglog,
   debugError,
   delay,
+  hasConstructor,
 } from './utilities'
 
 /* Handles your data and logs for you */
@@ -295,7 +296,7 @@ export default class DataManager {
     let previousLenght = null
     for (let i = 0; i < columnNamesDataTable.length; i++) {
       if (_.indexOf(columnNamesRows, columnNamesDataTable[i]) !== -1) {
-        if (rows[columnNamesDataTable[i]].constructor === Array) {
+        if (hasConstructor(Array, rows[columnNamesDataTable[i]])) {
           if (previousLenght === null) {
             previousLenght = rows[columnNamesDataTable[i]].length
           } else {

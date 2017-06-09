@@ -1118,7 +1118,7 @@ export default class TaskObject {
 
     const modalBox = new SmartModal(type, function dismissed() {
       if ((event.constructor === EventData) && (this.stateManager !== null)) {
-        event.happenedAt = this.timeInMs
+        event.happenedAt = this.stateManager.timeInMs
         this.stateManager.addEvent(event)
       }
 
