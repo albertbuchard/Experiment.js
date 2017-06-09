@@ -108,6 +108,11 @@
       scene.stateManager.setPauseKeyStroke()
 
 
+      scene.stateManager.states.active.resolveOnKey().then(() => { console.log('ANY KEY')})
+      scene.stateManager.states.active.resolveOnClick().then(() => { console.log('ANY CLICK')})
+      scene.stateManager.states.active.resolveOnKey(75).then(() => { console.log('K KEY')})
+
+
       return scene
     }
 

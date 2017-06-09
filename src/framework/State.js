@@ -3,7 +3,7 @@
 import _ from 'lodash'
 import Promise from 'bluebird'
 import EventData from './EventData'
-import { mandatory, debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor } from './utilities'
+import { mandatory, debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor, delay, Deferred } from './utilities'
 
 /* State object has a specific way to handle input and update objects */
 export default class State {
@@ -259,6 +259,34 @@ export default class State {
     } catch (e) {
       debugError(e)
     }
+  }
+
+  resolveOnKey(key = null, eventFlag = 'key_down') {
+    const deferred = new Deferred()
+    const f = (e) => {
+      if (key === null || key === e.data.keyCode) {
+        deferred.resolve(e)
+        return `State ${this.stateKey}.resolveOnKey: tested on '${key}' and resolved because key '${e.data.keyCode}' pressed`
+      } else if (!deferred.resolved) {
+        delay(5).then(() => { this.onNext(eventFlag, f) })
+        return `State ${this.stateKey}.resolveOnKey: tested on '${key}' and did not resolved because wrong key '${e.data.keyCode}' pressed`
+      }
+      return `State ${this.stateKey}.resolveOnKey: should not stay in the function stack`
+    }
+    this.onNext(eventFlag, f)
+
+    return deferred.promise
+  }
+
+  resolveOnClick(eventFlag = 'mouse_click') {
+    const deferred = new Deferred()
+    const f = (e) => {
+      deferred.resolve(e)
+      return `State ${this.stateKey}.resolveOnClick: resolved`
+    }
+    this.onNext(eventFlag, f)
+
+    return deferred.promise
   }
 
   freeze() {

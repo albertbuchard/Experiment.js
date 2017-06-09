@@ -802,7 +802,15 @@ export default class StateManager {
   }
 
   onNext(eventFlag, ...handlingFunctions) {
-    this.currentState.onNext(eventFlag, ...handlingFunctions)
+    return this.currentState.onNext(eventFlag, ...handlingFunctions)
+  }
+
+  resolveOnKey(...args) {
+    return this.currentState.resolveOnKey(...args)
+  }
+
+  resolveOnClick(...args) {
+    return this.currentState.resolveOnClick(...args)
   }
 
   /**
