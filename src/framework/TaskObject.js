@@ -803,6 +803,8 @@ export default class TaskObject {
     scene.initialCanvas = initialCanvas
     scene.initialCamera = camera
 
+    scene.initialCanvas.lastResize = this.timeInMs
+
     /* Create a GUI canvas */
     scene.initialGui = scene.stateManager.addGuiCanvas()
 
@@ -818,9 +820,10 @@ export default class TaskObject {
       // this refers to the scene here
       if (customSized) {
         this.initialCanvas.resizeAt = this.parentTaskObject.timeInMs + 1000
-        delay(1100).then(() => {
-          if (this.initialCanvas.resizeAt < this.parentTaskObject.timeInMs) {
+        delay(1000).then(() => {
+          if ((this.parentTaskObject.timeInMs - this.initialCanvas.lastResize > 100) && (this.initialCanvas.resizeAt < this.parentTaskObject.timeInMs)) {
             // ((this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2), (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2))
+            this.initialCanvas.lastResize = this.parentTaskObject.timeInMs
             const { size: customSized } = getCanvasDimensions()
             debugWarn('scene.updateContentFrame: window has been resized ', customSized)
             this.initialCanvas.size = customSized
