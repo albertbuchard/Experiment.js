@@ -520,6 +520,7 @@ export default class TaskObject {
         wasHandled: 'was_handled',
         beingHandled: 'being_handled',
         modalDismissed: 'modalDismissed',
+        tooltipDismissed: 'tooltipDismissed',
       },
     })
 
@@ -1117,6 +1118,7 @@ export default class TaskObject {
 
     const modalBox = new SmartModal(type, function dismissed() {
       if ((event.constructor === EventData) && (this.stateManager !== null)) {
+        event.happenedAt = this.timeInMs
         this.stateManager.addEvent(event)
       }
 

@@ -274,7 +274,7 @@ export default class StateManager {
   }
 
   // TODO tooltip on the GUI to highlight specific positions
-  tooltip({ replace = false, position = null, size = null, spaced = null, text = '', fontName = '14pt Verdana', duration = null, background = null, fontColor = null }) {
+  tooltip({ replace = false, position = null, size = null, spaced = null, text = '', fontName = '14pt Verdana', duration = null, event = new EventData(this.R.get.events_tooltipDismissed), background = null, fontColor = null }) {
     // Set the default
     spaced = spreadToObject(spaced, new BABYLON.Vector2(0, 0))
     if ((duration === null) || (duration.constructor !== Promise)) {
@@ -347,6 +347,7 @@ export default class StateManager {
         // TODO make a bounding function to make sure the tooltip is visible depending on the rendersize the position and size of the tooltip
       tooltip.box.position = nextPos
       tooltip.promise = duration
+      tooltip.event = event
       tooltip.disposed = false
     } else {
       position = spreadToObject(position, new BABYLON.Vector2(0, 0))
@@ -398,7 +399,7 @@ export default class StateManager {
       tooltipBox.position = position.subtract(sizeToVec(tooltipBox.size).scale(0.5).add(spaced))
 
 
-      tooltip = { box: tooltipBox, text: tooltipText, promise: duration, id, disposed: false }
+      tooltip = { box: tooltipBox, text: tooltipText, promise: duration, id, disposed: false, event }
 
 
       this.set('tooltips', tooltips.concat(tooltip))
@@ -407,6 +408,10 @@ export default class StateManager {
     duration.then(() => {
       if (tooltip.promise === duration) {
         this.hideTooltip(tooltip)
+      }
+      if (event.constructor === EventData) {
+        event.happenedAt = this.timeInMs
+        this.addEvent(event)
       }
     })
 
@@ -794,6 +799,10 @@ export default class StateManager {
     } catch (e) {
       debugError(e)
     }
+  }
+
+  onNext(eventFlag, ...handlingFunctions) {
+    this.currentState.onNext(eventFlag, ...handlingFunctions)
   }
 
   /**

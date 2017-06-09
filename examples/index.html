@@ -89,7 +89,7 @@
         music.setVolume(1)
         music.play()
 
-        this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes', event: new EventData('caca', { forState: 'pipi' }) })
+        this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes'})
       })
 
       scene.stateManager.states.active.addEndingFunctions(function ending() {
@@ -102,6 +102,7 @@
       })
 
       scene.stateManager.states.active.addEventFunctions(R.get.events_modalDismissed, () => { console.log('Main scene modal was dismissed') })
+      scene.stateManager.states.active.onNext(R.get.events_modalDismissed, () => {taskObject.modal({ title: 'Example One', content: 'Not so fast'})})
 
       /* Generate a default pause menu and link it to spacebar stroke */
       scene.stateManager.setPauseKeyStroke()
@@ -126,7 +127,7 @@
     taskObject.startTask().then((message) => {
       console.log(message)
       // Try this in the console :
-      // taskObject.currentScene = 'main'
+      taskObject.currentScene = 'main'
     })
 
     window.taskObject = taskObject

@@ -29,6 +29,13 @@ export default class State {
     this._eventFunctions = {}
 
     /**
+     * Object containing array of function to be called once for specific events
+     * The key of those properties are the event flags. Handling functions should return a Promise.
+     * @type {Object}
+     */
+    this._nextEventFunctions = {}
+
+    /**
      * Array of handling function to be called when the state awaken, just after state change.
      * This is where redrawing should go. Handling functions should return a Promise.
      * @type {Array}
@@ -165,6 +172,7 @@ export default class State {
     // for each input flag have a specific function ready - that can be customizable
     // rename input with Event ?
     // make a promise and chain it with .then(stateHasFinishedHandlingEvent())
+    let handled = false
     if (this.hasEventFunction(event.flag)) {
       /* Promise allow for assynchronous handling of events */
       const eventFunctions = this._eventFunctions[event.flag]
@@ -197,9 +205,59 @@ export default class State {
             debugError(error)
           })
       }
-    } else {
+      handled = true
+    }
+    if (this._nextEventFunctions.hasOwnProperty(event.flag)) {
+      let eventFunctions = this._nextEventFunctions[event.flag]
+      if (eventFunctions !== null) {
+        if (eventFunctions.constructor === Function) { eventFunctions = [eventFunctions] }
+        for (const eventFunction of eventFunctions) {
+          Promise.method(eventFunction)(event)
+            .then(function (functionName, data) {
+              /* Promise ran as expected, returned data */
+              debuglog(data)
+              const eventClone = _.cloneDeep(event)
+              eventClone.data.handlingFunction = functionName
+              this._stateManager.stateHasFinishedHandlingEvent(eventClone)
+            }.bind(this, eventFunction.name))
+            .catch((error) => {
+              /* an error occured */
+              debugError(error)
+            })
+        }
+        this._nextEventFunctions[event.flag].length = 0
+        handled = true
+      }
+    }
+
+    if (!handled) {
       this._stateManager.stateHasFinishedHandlingEvent(event)
       debuglog(`State: Event '${event.flag}' not handled by state '${this.stateKey}'`)
+    }
+  }
+
+  onNext(eventFlag, ...handlingFunctions) {
+    try {
+      mustBeDefined(eventFlag, ...handlingFunctions)
+      mustHaveConstructor(Function, ...handlingFunctions)
+
+      // checks if functions should be stacked in an array for this flag
+      if (this._nextEventFunctions.hasOwnProperty(eventFlag)) {
+        if (this._nextEventFunctions[eventFlag].constructor === Array) {
+          // push the handlingFunction to the array of _eventFunctions[eventFlag]
+          this._nextEventFunctions[eventFlag] = this._nextEventFunctions[eventFlag].concat(handlingFunctions)
+          debuglog(`State ${this.stateKey}.onNext: several handling functions - handling function pushed to the array of event functions on event '${eventFlag}'`)
+        } else {
+          // creates array of event function
+          this._nextEventFunctions[eventFlag] = [this._nextEventFunctions[eventFlag]].concat(handlingFunctions)
+          debuglog(`State ${this.stateKey}.onNext: several handling functions - array created for handling functions for state on event '${eventFlag}'`)
+        }
+      } else {
+        this._nextEventFunctions[eventFlag] = handlingFunctions
+        debuglog(`State ${this.stateKey}.onNext: handling function added to state '${this.stateKey}' for event '${eventFlag}'`)
+      }
+    } catch (e) {
+      debugError(e)
     }
   }
 
