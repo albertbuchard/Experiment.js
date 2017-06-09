@@ -261,10 +261,46 @@ export default class State {
     }
   }
 
-  resolveOnKey(key = null, eventFlag = 'key_down') {
+  resolveOnKey(options = { key: null, except: [32], eventFlag: 'key_down' }) {
+    const baseOptions = { key: null, except: [32], eventFlag: 'key_down' }
+
+    if (options.constructor !== Object) {
+      if (options.constructor === Number) {
+        baseOptions.key = options
+        options = {}
+      } else {
+        debugError('State.resolveOnKey: invalid options')
+        return null
+      }
+    }
+
+    let { key, except, eventFlag } = _.extend(baseOptions, options) //eslint-disable-line
+    if ((key !== null) && (key.constructor !== Array)) {
+      if (key.constructor === Number) {
+        key = [key]
+      } else {
+        debugError('State.resolveOnKey: key must be numeric')
+        return null
+      }
+    }
+
+    if ((typeof except === 'undefined') || (except === null)) {
+      except = []
+    }
+
+    if (except.constructor !== Array) {
+      if (except.constructor === Number) {
+        except = [except]
+      } else {
+        debugError('State.resolveOnKey: except must be numeric')
+        return null
+      }
+    }
+
+
     const deferred = new Deferred()
     const f = (e) => {
-      if (key === null || key === e.data.keyCode) {
+      if ((key === null && except.indexOf(e.data.keyCode) === -1) || (key !== null && key.indexOf(e.data.keyCode) !== -1)) {
         deferred.resolve(e)
         return `State ${this.stateKey}.resolveOnKey: tested on '${key}' and resolved because key '${e.data.keyCode}' pressed`
       } else if (!deferred.resolved) {
