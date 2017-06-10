@@ -103,7 +103,7 @@ class Loader extends BABYLON.Rectangle2D {
       const width = (value >= 50) ? (75 - value) * (this.size.width / 25) : this.size.width
 
       this.masks.top.width = width
-      const offset = this.size.width - width
+      const offset = this.size.width - width + (this.borderThickness)
 
       this.masks.top.margin.rightPixels = offset / 2
       this.masks.top.margin.leftPixels = 0
