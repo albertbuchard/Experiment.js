@@ -31,6 +31,7 @@ import {
   debugError,
   mustHaveConstructor,
   delay,
+  hasConstructor,
 } from './utilities'
 
 
@@ -1114,6 +1115,7 @@ export default class TaskObject {
    * @returns {type} Description
    */
   modal({ type = 'centralLarge', title = '', content = '', event = new EventData(this.R.get.events_modalDismissed) }) {
+    this.dismissModal()
     this.currentModal = { data: { type, title, content, event } }
     const deferred = new Deferred()
 
@@ -1134,6 +1136,13 @@ export default class TaskObject {
 
     this.currentModal.modalBox = modalBox
     return deferred.promise
+  }
+
+  dismissModal() {
+    if ((this.currentModal !== null) && (hasConstructor(SmartModal, this.currentModal.modalBox))) {
+      this.currentModal.modalBox.callThenDestroy()
+      this.currentModal = null
+    }
   }
 
   /* === Animation helpers === */
