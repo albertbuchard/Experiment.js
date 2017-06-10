@@ -19,6 +19,8 @@
  import DataManager from './src/framework/DataManager'
  import RessourceManager from './src/framework/RessourceManager'
 
+ import Loader from './src/framework/objects/Loader'
+
  import {
    Array,
    String,
@@ -98,4 +100,5 @@
   scaleSize,
   hasConstructor,
   preloadImages,
+  Loader,
 }

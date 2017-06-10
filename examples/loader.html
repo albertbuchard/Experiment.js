@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Experiment[js].exampleOne</title>
+  <script src="../node_modules/jquery/dist/jquery.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+  <script src="../node_modules/experiment-mathjs/dist/math.js"></script>
+  <!-- <script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script> -->
+  <!-- <script src="http://cdn.jsdelivr.net/bluebird/3.4.7/bluebird.js"></script> -->
+  <script src="../node_modules/lodash/lodash.js"></script>
+  <script src="../node_modules/chartjs/chart.js"></script>
+  <script src="../node_modules/experiment-babylon-js/lib/babylon.max.js"></script>
+  <script src="../node_modules/experiment-boxes/lib/experimentBoxes.max.js" charset="utf-8"></script>
+  <script src="../lib/experiment.max.js" charset="utf-8"></script>
+  <style>
+  html, body {
+    /*overflow: hidden;*/
+    width   : 100%;
+    height  : 100%;
+    margin  : 0;
+    padding : 0;
+  }
+
+  .task-canvas {
+    width   : 100%;
+    height  : 100%;
+    touch-action: none;
+  }
+
+  body {
+    background: #E3E3E3;
+  }
+  </style>
+  <script>
+  /* global TaskObject BABYLON ParamBox delay _ fadeout DEBUG_MODE_ON */
+  DEBUG_MODE_ON = false
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const taskObject = new TaskObject(document.getElementsByClassName('task-canvas'))
+
+    /* Create a custom scene by making a scene generator function */
+    const sceneGenerator = function (options) {
+      /**
+       * As it is the case for all functions called by the framework
+       * they are passed down a custom context through 'this'
+       * @see context
+       */
+      const context = this
+
+      const taskObject = context.taskObject
+      const R = context.R
+
+      const optionsBase = {
+        sceneKey: 'main',
+        canvasBackground: new BABYLON.Color4(0, 0, 0, 1),
+        backgroundRoundRadius: 50,
+        clearColor: new BABYLON.Color4(0, 0, 0, 1),
+        canvasPercentWidth: 1, // NOTE This does no work -- resize is bad if screencanvas is not fullscreen - you could do it manually but it is not smooth
+        canvasPercentHeight: 1,
+        mode: 'central',
+        level: null,
+      }
+
+      options = _.extend(optionsBase, options)
+
+      const scene = taskObject.create2DScene(options)
+      const loader = new experiment.Loader({parent: scene.initialCanvas})
+
+      const updateLoader = function () {
+        delay(20).then(() => {
+          if (loader.value >= 100) {
+            loader.value = 0
+          } else {
+            loader.value += 1
+          }
+          updateLoader()
+
+        })
+      }
+      updateLoader()
+
+      /* Generate a default pause menu and link it to spacebar stroke */
+      scene.stateManager.setPauseKeyStroke()
+
+
+      scene.stateManager.states.active.resolveOnKey().then(() => { console.log('ANY KEY')})
+      scene.stateManager.states.active.resolveOnClick().then(() => { console.log('ANY CLICK')})
+      scene.stateManager.states.active.resolveOnKey(75).then(() => { console.log('K KEY')})
+
+
+      return scene
+    }
+
+    taskObject.registerSceneGenerator(sceneGenerator)
+
+    taskObject.assetsToLoad = {
+      logo2: {
+        path: '/assets/experiment-js-light.svg',
+        type: 'texture',
+      },
+    }
+
+    taskObject.startTask().then((message) => {
+      console.log(message)
+      // Try this in the console :
+      taskObject.currentScene = 'main'
+    })
+
+    window.taskObject = taskObject
+  })
+  </script>
+</head>
+<body>
+  <!-- Create a canvas for the task -->
+  <canvas class="task-canvas">
+    <p>
+      Your browser does not support the canvas element and will not be able to render the task.
+    </p>
+    <p>
+      Please install Google Chrome to continue: https://www.google.com/chrome
+    </p>
+  </canvas>
+</body>
+</html>
