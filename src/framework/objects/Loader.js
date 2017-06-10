@@ -22,10 +22,10 @@ class Loader extends BABYLON.Rectangle2D {
     options = _.extend(baseOptions, options)
     super(options)
 
-    let borderThickness = options.borderThickness
-    if (options.marginAlignment === null) {
-      borderThickness = options.borderThickness + 2
-    }
+    // let borderThickness = options.borderThickness
+    // if (options.marginAlignment === null) {
+    const borderThickness = options.borderThickness + 2
+    // }
 
     // create masks
     const fill = BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0, 0, 0, 1))
