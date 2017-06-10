@@ -68,7 +68,9 @@
       options = _.extend(optionsBase, options)
 
       const scene = taskObject.create2DScene(options)
-      const loader = new experiment.Loader({parent: scene.initialCanvas})
+      const loader = new experiment.Loader({ parent: scene.initialCanvas, size: new BABYLON.Size(100, 40), border: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.7, 1, 0.7, 1)), borderThickness: 4 })
+      const loader2 = new experiment.Loader({ parent: scene.initialCanvas, size: new BABYLON.Size(100, 100), border: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(1, 0.7, 0.7, 1)), borderThickness: 4,
+        marginAlignment: 'h: left, v: center' })
 
       const updateLoader = function () {
         delay(20).then(() => {
@@ -77,11 +79,44 @@
           } else {
             loader.value += 1
           }
-          updateLoader()
 
+          if (loader2.value >= 100) {
+            loader2.value = 0
+          } else {
+            loader2.value += 0.5
+          }
+          updateLoader()
         })
       }
       updateLoader()
+
+      const addLoader = function () {
+        const loader = new experiment.Loader({
+          parent: scene.initialCanvas,
+          size: new BABYLON.Size(_.random(10,250), _.random(10,250)),
+          border: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(Math.random(), Math.random(), Math.random(), 1)),
+          borderThickness: _.random(1,5),
+          marginAlignment: null,
+          position: new BABYLON.Vector2(_.random(50,taskObject.renderSize.width-50),_.random(50,taskObject.renderSize.height-50))
+        })
+
+        const updateLoader = function () {
+          delay(_.random(10,50)).then(() => {
+            if (loader.value >= 100) {
+              loader.value = 0
+            } else {
+              loader.value += 1
+            }
+            updateLoader()
+          })
+        }
+        updateLoader()
+
+        delay(1000).then(() => {
+          addLoader()
+        })
+      }
+      addLoader()
 
       /* Generate a default pause menu and link it to spacebar stroke */
       scene.stateManager.setPauseKeyStroke()

@@ -22,6 +22,11 @@ class Loader extends BABYLON.Rectangle2D {
     options = _.extend(baseOptions, options)
     super(options)
 
+    let borderThickness = options.borderThickness
+    if (options.marginAlignment === null) {
+      borderThickness = options.borderThickness + 2
+    }
+
     // create masks
     const fill = BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0, 0, 0, 1))
     const masks = {}
@@ -29,7 +34,7 @@ class Loader extends BABYLON.Rectangle2D {
       parent: this,
       id: 'loaderMaskBottom',
       marginAlignment: 'h: center, v: center',
-      size: new BABYLON.Size(options.size.width, options.borderThickness + 1),
+      size: new BABYLON.Size(options.size.width, borderThickness),
       fill,
       zOrder: 0.001,
     })
@@ -37,7 +42,7 @@ class Loader extends BABYLON.Rectangle2D {
       parent: this,
       id: 'loaderMaskRight',
       marginAlignment: 'h: center, v: center',
-      size: new BABYLON.Size(options.borderThickness + 1, options.size.height),
+      size: new BABYLON.Size(borderThickness, options.size.height),
       fill,
       zOrder: 0.002,
     })
@@ -45,7 +50,7 @@ class Loader extends BABYLON.Rectangle2D {
       parent: this,
       id: 'loaderMaskTop',
       marginAlignment: 'h: center, v: center',
-      size: new BABYLON.Size(options.size.width, options.borderThickness + 1),
+      size: new BABYLON.Size(options.size.width, borderThickness),
       fill,
       zOrder: 0.003,
     })
@@ -53,7 +58,7 @@ class Loader extends BABYLON.Rectangle2D {
       parent: this,
       id: 'loaderMaskLeft',
       marginAlignment: 'h: center, v: center',
-      size: new BABYLON.Size(options.borderThickness + 1, options.size.height),
+      size: new BABYLON.Size(borderThickness, options.size.height),
       fill,
       zOrder: 0.004,
     })
@@ -72,7 +77,7 @@ class Loader extends BABYLON.Rectangle2D {
       const offset = this.size.width - this.masks.bottom.width // (12.5 - value) * (this.size.width / (2 * 12.5))
       this.masks.bottom.margin.rightPixels = 0
       this.masks.bottom.margin.leftPixels = offset / 2
-      this.masks.bottom.margin.topPixels = this.size.height / 2
+      this.masks.bottom.margin.topPixels = (this.size.height / 2) - (this.borderThickness / 2)
       this.masks.bottom.margin.bottomPixels = 0
       this.masks.bottom.levelVisible = true
     } else {
@@ -85,7 +90,7 @@ class Loader extends BABYLON.Rectangle2D {
       const offset = this.size.height - height
 
       this.masks.right.margin.rightPixels = 0
-      this.masks.right.margin.leftPixels = this.size.width / 2
+      this.masks.right.margin.leftPixels = (this.size.width / 2) - (this.borderThickness / 2)
       this.masks.right.margin.topPixels = 0
       this.masks.right.margin.bottomPixels = offset / 2
 
@@ -103,7 +108,7 @@ class Loader extends BABYLON.Rectangle2D {
       this.masks.top.margin.rightPixels = offset / 2
       this.masks.top.margin.leftPixels = 0
       this.masks.top.margin.topPixels = 0
-      this.masks.top.margin.bottomPixels = this.size.height / 2
+      this.masks.top.margin.bottomPixels = (this.size.height / 2) - (this.borderThickness / 2)
 
       this.masks.top.levelVisible = true
     } else {
@@ -114,9 +119,9 @@ class Loader extends BABYLON.Rectangle2D {
       const height = (value >= 75) ? (100 - value) * (this.size.height / 25) : this.size.height
 
       this.masks.left.height = height
-      const offset = this.size.height - height
+      const offset = this.size.height - height + (this.borderThickness)
 
-      this.masks.left.margin.rightPixels = this.size.width / 2
+      this.masks.left.margin.rightPixels = (this.size.width / 2) - (this.borderThickness / 2)
       this.masks.left.margin.leftPixels = 0
       this.masks.left.margin.topPixels = offset / 2
       this.masks.left.margin.bottomPixels = 0
