@@ -253,12 +253,13 @@ function preloadImages(...images) { // TODO make it a RessourceManager function
       img.src = image
       imgArray.push(img)
 
-      img.onload = function () {
-        // this.resolve()
-        debugError('THIS IS ONLOAD')
-      } // .bind(deferred)
+      if (img.complete) {
+        deferred.resolve()
+      } else {
+        img.addEventListener('load', function () { debugError('THIS IS LOAD VANILLA'); this.resolve() }.bind(deferred))
+      }
 
-      $(img).load(function () {
+      $(img).on('load', function () {
         this.resolve()
         debugError('THIS IS LOAD')
       }.bind(deferred))
