@@ -3,7 +3,7 @@
  *
  *
  */
-
+import $ from 'jquery'
 import _ from 'lodash'
 import math from 'experiment-mathjs'
 import Promise from 'bluebird'
@@ -254,7 +254,13 @@ function preloadImages(...images) { // TODO make it a RessourceManager function
       imgArray.push(img)
 
       img.onload = function () {
+        // this.resolve()
+        debugError('THIS IS ONLOAD')
+      } // .bind(deferred)
+
+      $(img).load = function () {
         this.resolve()
+        debugError('THIS IS LOAD')
       }.bind(deferred)
 
       promiseArray.push(deferred.promise)
