@@ -869,7 +869,7 @@ export default class TaskObject {
       throw new Error('StateManager.setCheckpoint: no dataManager')
     }
 
-    this.dataManager.setConnection(variables)
+    return this.dataManager.setConnection(variables)
     .then((connection) => { this.connection = connection })
     .catch((error) => { debugError(error) })
   }

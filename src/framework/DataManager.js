@@ -773,6 +773,9 @@ export default class DataManager {
             this.connections.push(connection)
             deferred.resolve(connection)
           })
+          .catch((e) => {
+            deferred.reject(e)
+          })
         } else {
           this.connections.push(connection)
           deferred.resolve(connection)
