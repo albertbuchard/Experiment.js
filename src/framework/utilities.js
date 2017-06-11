@@ -256,13 +256,13 @@ function preloadImages(...images) { // TODO make it a RessourceManager function
       if (img.complete) {
         deferred.resolve()
       } else {
-        img.addEventListener('load', function () { debugError('THIS IS LOAD VANILLA'); this.resolve() }.bind(deferred))
+        img.addEventListener('load', function () { this.resolve() }.bind(deferred))
       }
 
-      $(img).on('load', function () {
-        this.resolve()
-        debugError('THIS IS LOAD')
-      }.bind(deferred))
+      // $(img).on('load', function () {
+      //   this.resolve()
+      //   debugError('THIS IS LOAD')
+      // }.bind(deferred))
 
       promiseArray.push(deferred.promise)
     } else {
