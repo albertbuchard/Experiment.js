@@ -258,10 +258,10 @@ function preloadImages(...images) { // TODO make it a RessourceManager function
         debugError('THIS IS ONLOAD')
       } // .bind(deferred)
 
-      $(img).load = function () {
+      $(img).load(function () {
         this.resolve()
         debugError('THIS IS LOAD')
-      }.bind(deferred)
+      }.bind(deferred))
 
       promiseArray.push(deferred.promise)
     } else {
