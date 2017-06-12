@@ -88,7 +88,9 @@ function get_question_id($survey_data, $field = "subject_id_question_id")
 function get_survey_url($survey_data,
   $fields = array(),
   $lang = "en",
-  $root_dir = "http://brainandlearning.org/limesurvey/index.php/survey/index/sid/") {
+  $root_dir = null) {
+
+  if ($root_dir === null) $root_dir = $GLOBALS['DB_ROOT'];
 
   $check = check_survey_data($survey_data);
   if (!$check["result"]) {
@@ -166,5 +168,3 @@ function get_subject_registered_surveys($subject_id, $bdd)
 
   return $rows;
 }
-
- 

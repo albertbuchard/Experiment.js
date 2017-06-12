@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import $ from 'jquery'
-import Promise from 'bluebird'
+import Promise from 'bluebird' // eslint-disable-line
+import { SmartForm } from 'experiment-boxes'
 import {
   Array,
   String,
@@ -9,6 +10,7 @@ import {
   debuglog,
   debugError,
   delay,
+  hasConstructor,
 } from './utilities'
 
 /* Handles your data and logs for you */
@@ -121,6 +123,9 @@ export default class DataManager {
 
     this.addRate = 2000
 
+    this.loginDeferred = null
+    this.isCurrentlySigningIn = null
+
     /** Determines wether the current environment is Node or the Browser */
     this.isNode = false
     if (typeof module !== 'undefined' && module.exports) {
@@ -144,18 +149,22 @@ export default class DataManager {
    * @param {[type]} fields [description]
    */
   addTable(name = mandatory(), fields = mandatory()) {
-    if (_.has(this.dataTables, name)) {
-      throw new Error(`DataManager.addTable: Data table with name '${name}' already exists`)
-    }
+    try {
+      if (_.has(this.dataTables, name)) {
+        throw new Error(`DataManager.addTable: Data table with name '${name}' already exists`)
+      }
 
-    /* --- Create the dataTable object and define the fields --- */
-    this.dataTables[name] = {}
-    for (let i = 0; i < fields.length; i++) {
-      this.dataTables[name][fields[i]] = []
-    }
+      /* --- Create the dataTable object and define the fields --- */
+      this.dataTables[name] = {}
+      for (let i = 0; i < fields.length; i++) {
+        this.dataTables[name][fields[i]] = []
+      }
 
-    if (_.indexOf(fields, 'id') === -1) {
-      this.dataTables[name].id = []
+      if (_.indexOf(fields, 'id') === -1) {
+        this.dataTables[name].id = []
+      }
+    } catch (e) {
+      debugError(e)
     }
   }
 
@@ -181,7 +190,8 @@ export default class DataManager {
     if (this.tableNames.has(name)) {
       return new Set(Object.keys(this.dataTables[name]))
     }
-    throw new Error('DataManager.fieldNames: unknown table.')
+    debugError('DataManager.fieldNames: unknown table.')
+    return null
   }
 
   /**
@@ -226,20 +236,25 @@ export default class DataManager {
    * @return {array}             Range of ids
    */
   generateIds(name = mandatory(), numberOfIds = 1) {
-    if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager.generateIds: Data table with name '${name}' does not exists`)
-    }
+    try {
+      if (!(_.has(this.dataTables, name))) {
+        throw new Error(`DataManager.generateIds: Data table with name '${name}' does not exists`)
+      }
 
-    if (!(_.has(this.dataTables[name], 'id'))) {
-      throw new Error(`DataManager.generateIds: Data table with name '${name}' does not have an 'id' field`)
-    }
+      if (!(_.has(this.dataTables[name], 'id'))) {
+        throw new Error(`DataManager.generateIds: Data table with name '${name}' does not have an 'id' field`)
+      }
 
-    let startId = 0
-    if (this.dataTables[name].id.length !== 0) {
-      startId = _.max(this.dataTables[name].id) + 1
-    }
+      let startId = 0
+      if (this.dataTables[name].id.length !== 0) {
+        startId = _.max(this.dataTables[name].id) + 1
+      }
 
-    return (_.range(startId, startId + numberOfIds))
+      return (_.range(startId, startId + numberOfIds))
+    } catch (e) {
+      debugError(e)
+      return null
+    }
   }
 
   /**
@@ -250,7 +265,8 @@ export default class DataManager {
    */
   getEmptyRow(name = mandatory()) {
     if (!(_.has(this.dataTables, name))) {
-      throw new Error(`DataManager.getEmptyRow: Data table with name '${name}' does not exists`)
+      debugError(`DataManager.getEmptyRow: Data table with name '${name}' does not exists`)
+      return null
     }
 
     const emptyTable = {}
@@ -284,7 +300,7 @@ export default class DataManager {
     let previousLenght = null
     for (let i = 0; i < columnNamesDataTable.length; i++) {
       if (_.indexOf(columnNamesRows, columnNamesDataTable[i]) !== -1) {
-        if (rows[columnNamesDataTable[i]].constructor === Array) {
+        if (hasConstructor(Array, rows[columnNamesDataTable[i]])) {
           if (previousLenght === null) {
             previousLenght = rows[columnNamesDataTable[i]].length
           } else {
@@ -324,11 +340,13 @@ export default class DataManager {
     // TODO discuss creating a class representing rows in a formalized way
     if (rows.constructor === Array) {
       if (rows.length === 0) {
-        throw new Error('DataManager.toDataObject: rows is empty.')
+        debugError('DataManager.toDataObject: rows is empty.')
+        return null
       }
 
       if (rows[0].constructor !== Object) {
-        throw new Error('DataManager.toDataObject: dataArray rows are invalid.')
+        debugError('DataManager.toDataObject: dataArray rows are invalid.')
+        return null
       }
 
       const fields = Object.keys(rows[0])
@@ -351,7 +369,8 @@ export default class DataManager {
     if (this.isValidRows(rows, name)) {
       return rows
     }
-    throw new Error('DataManager.toDataObject: Row is of invalid format.')
+    debugError('DataManager.toDataObject: Row is of invalid format.')
+    return null
   }
 
   /**
@@ -371,7 +390,8 @@ export default class DataManager {
         // TODO do a isValidDataArray function that test every row against the table fields
         return rows
       }
-      throw new Error('DataManager.toDataArray: Row is of invalid format.')
+      debugError('DataManager.toDataArray: Row is of invalid format.')
+      return null
     }
 
     if (this.isValidRows(rows, name)) {
@@ -382,7 +402,8 @@ export default class DataManager {
         const row = {}
         for (const field of fields) {
           if (rows[field].length <= i) {
-            throw new Error(`DataManager.toDataArray: field array ${field} is of invalid size.`)
+            debugError(`DataManager.toDataArray: field array ${field} is of invalid size.`)
+            return null
           }
           row[field] = rows[field][i]
         }
@@ -391,13 +412,15 @@ export default class DataManager {
 
       return dataArray
     }
-    throw new Error('DataManager.toDataArray: Row is of invalid format.')
+    debugError('DataManager.toDataArray: Row is of invalid format.')
+    return null
   }
 
   toCsv(data = null, format = 'dataObject') {
     if (data.constructor === String) {
       if (!(this.hasTable(name))) {
-        throw new Error(`DataManager.toCsv: Data table with name '${name}' does not exists`)
+        debugError(`DataManager.toCsv: Data table with name '${name}' does not exists`)
+        return null
       }
       data = this.dataTables[data]
     }
@@ -464,17 +487,85 @@ export default class DataManager {
   }
 
   /* ======= Credentials ======= */
-  login(connection = mandatory(), variables = null, deferred = new Deferred()) {
+  signInForm(formGenerator = null) {
+    const deferred = new Deferred()
+    let form = null
+    if (hasConstructor(Function, formGenerator)) {
+      form = formGenerator()
+      if (!hasConstructor(SmartForm, form)) {
+        form = null
+        debugError('DataManager.signInForm: sign in form function does not return a SmartForm')
+      }
+    }
+
+    if (form === null) {
+      // generate a basic form with userId and password
+      const fields = {
+        userId: {
+          type: 'input', // field type: input, select, textaera, slider, radio
+          constraints: 'alpha; length:10,300', // list of constraints that will be automatically verified: mandatory; alpha; numeric; length:XX; contains:a,b,@,.;
+          authorizedValues: null, // athorized values
+          parent: null,
+          title: 'Enter your UserId',
+        },
+        password: {
+          type: 'input', // field type: input, select, textaera, slider, radio
+          constraints: 'alpha; length:6,300', // list of constraints that will be automatically verified: mandatory; alpha; numeric; length:XX; contains:a,b,@,.;
+          authorizedValues: null, // athorized values
+          parent: null,
+          title: 'Enter your password:',
+        },
+      }
+      const options = { fields, title: 'Login Form', format: 'topCentralSmall' }
+      form = new SmartForm(options)
+    }
+
+    form.buttonText = 'OK'
+    form.promise.then((fields) => {
+      const values = {}
+      for (const field in fields) {
+        if ((fields.hasOwnProperty(field) && fields[field].value)) {
+          values[field] = fields[field].value
+        }
+      }
+      deferred.resolve(values)
+    })
+
+    return deferred
+  }
+
+  login(connection = mandatory(), variables = null, deferred = null) {
+    if ((hasConstructor(Deferred, this.loginDeferred) && this.loginDeferred.pending)) {
+      if (deferred !== this.loginDeferred) {
+        return this.loginDeferred.promise
+      }
+      deferred = this.loginDeferred
+    } else {
+      if (!hasConstructor(Deferred, deferred)) {
+        deferred = new Deferred()
+      }
+      this.loginDeferred = deferred
+    }
+
     if (deferred.status > this.MAX_NUMBER_OF_RETRY) {
       deferred.reject('DataManager.login: login failure - reach max retry.')
     }
     deferred.status += 1
 
-    // an interface needs to have a login endpoint to be used in this function
-    // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
+    if (hasConstructor(Deferred, this.isCurrentlySigningIn) && this.isCurrentlySigningIn.pending) {
+      return this.isCurrentlySigningIn.promise
+    }
+
+      // an interface needs to have a login endpoint to be used in this function
+      // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
     if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
       if (variables === null) {
-        return this.login(connection, { userId: 'John', password: 'az4444' }, deferred)// call a smartForm modal with userId and password
+        const formDeferred = this.signInForm(connection.signInForm)
+        this.isCurrentlySigningIn = formDeferred
+        return formDeferred.promise.then((credentials) => {
+          deferred.status = 0
+          return this.login(connection, credentials, deferred)// call a smartForm modal with userId and password
+        })
       }
         // perform ajax with the variables as credentials
       const data = {
@@ -483,30 +574,33 @@ export default class DataManager {
         query: connection.login,
       }
 
-        // send the data through ajax in json format
+          // send the data through ajax in json format
       $.ajax({
         url: connection.endpoint,
         type: 'POST',
         data: JSON.stringify(data),
         contentType: 'application/json',
       })
-        .done(function done(data, status) {
-          // if success set credentials inside the connection
-          connection.credentials = data.credentials
-          if (this.useLocalStorageCredentials) {
-            this.local(connection.name, { credentials: data.credentials })
-          }
-          debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
-          deferred.resolve()
-        }.bind(this))
-        .fail(function (connection, xhr) {
-          // if failure call login with no variables to call a smartForm
-          const json = xhr.responseJSON
-          const message = json.message || ''
-          debugError(`DataManager.push: error during login with message ${message}`)
-          this.login(connection, null, deferred)
-        }.bind(this, connection))
+          .done(function done(data, status) {
+            // if success set credentials inside the connection
+            connection.credentials = data.credentials
+            if (this.useLocalStorageCredentials) {
+              this.local(connection.name, { credentials: data.credentials })
+            }
+            debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
+            deferred.resolve()
+          }.bind(this))
+          .fail(function (connection, xhr) {
+            // if failure call login with no variables to call a smartForm
+            const json = xhr.responseJSON
+            const message = json.message || ''
+            debugError(`DataManager.push: error during login with message ${message}`)
+            this.login(connection, null, deferred)
+          }.bind(this, connection))
+    } else {
+      deferred.reject(`DataManager.login: no valid login enpoint for the connection ${connection.name}`)
     }
+
 
     return deferred.promise
   }
@@ -515,51 +609,53 @@ export default class DataManager {
   query(query = mandatory(), variables = {}, connection = null, deferred = new Deferred()) {
     if (deferred.status > this.MAX_NUMBER_OF_RETRY) {
       deferred.reject('DataManager.query: query failure - reach max retry.', query)
-    }
-    deferred.status += 1
-
-    if (connection === null) {
-      if (this.connections.length > 0) {
-        connection = this.connections[0]
-      } else {
-        deferred.reject('DataManager.query: no valid connection available.')
-      }
-    }
-
-    if (connection.type === this.INTERFACE_REST) {
-      // build the data object to send
-      const data = {
-        interface: connection.type,
-        credentials: connection.credentials,
-        query,
-        variables,
-      }
-
-      // send the data through ajax in json format
-      $.ajax({
-        url: connection.endpoint,
-        type: 'POST',
-        data: JSON.stringify(data),
-        contentType: 'application/json',
-      })
-      .done((data, status) => {
-        // once the ajax call is done, check status of http
-        debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
-        deferred.resolve(data)
-      })
-      .fail((xhr) => {
-        const json = xhr.responseJSON || { message: '', shouldLog: false }
-        if (json.shouldLog) {
-          debugError('DataManager.push: user is not logged in -- will call the log function.')
-          this.login(connection).then(() => { this.query(query, variables, connection, deferred) })
-        } else {
-          debugError('DataManager.push: could not perform query -- will retry', json.stringify(query), json.message)
-          this.query(query, variables, connection, deferred)
-        }
-      })
     } else {
-      deferred.reject('DataManager.query: unsupported connection.')
+      deferred.status += 1
+
+      if (connection === null) {
+        if (this.connections.length > 0) {
+          connection = this.connections[0]
+        } else {
+          deferred.reject('DataManager.query: no valid connection available.')
+        }
+      }
+
+      if (connection.type === this.INTERFACE_REST) {
+        // build the data object to send
+        const data = {
+          interface: connection.type,
+          credentials: connection.credentials,
+          query,
+          variables,
+        }
+
+        // send the data through ajax in json format
+        $.ajax({
+          url: connection.endpoint,
+          type: 'POST',
+          data: JSON.stringify(data),
+          contentType: 'application/json',
+        })
+        .done((data, status) => {
+          // once the ajax call is done, check status of http
+          debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
+          deferred.resolve(data)
+        })
+        .fail((xhr) => {
+          const json = xhr.responseJSON || { message: '', shouldLog: false }
+          if (json.shouldLog) {
+            debugError('DataManager.push: user is not logged in -- will call the log function.')
+            this.login(connection).then(() => { this.query(query, variables, connection, deferred) })
+          } else {
+            debugError('DataManager.push: could not perform query -- will retry', json.stringify(query), json.message)
+            this.query(query, variables, connection, deferred)
+          }
+        })
+      } else {
+        deferred.reject('DataManager.query: unsupported connection.')
+      }
     }
+
 
     return deferred.promise
   }
@@ -608,112 +704,125 @@ export default class DataManager {
         this.push()
       })
     }
+    // return Promise.resolve()
   }
 
   getStagedData(table = mandatory(), format = 'dataArray') {
     // check that the table is valid
-    if (!this.tableNames.has(table)) {
-      throw new Error('DataManager.getStagedData: unknown table.')
-    }
-
-    // check if we have a last index, if not set it to 0
-    if (Object.keys(this.tablesLastIndex).indexOf(table) === -1) {
-      this.tablesLastIndex[table] = 0
-    }
-
-    const dataTable = this.dataTables[table]
-    const fields = this.fieldNames(table)
-    const numRows = dataTable[fields.sample()].length
-    const lastIndex = this.tablesLastIndex[table]
-
-    // create a new array with the unpushed data (without cloning the parent array)
-    const data = format === 'dataArray' ? [] : {}
-    let j = 0
-    for (let i = lastIndex; i < numRows; i++) {
-      if (format === 'dataArray') {
-        const row = {}
-        for (const field of fields) {
-          if (field === 'id') continue
-
-          if (dataTable[field].length <= i) {
-            throw new Error(`DataManager.toDataArray: field array ${field} is of invalid size.`)
-          }
-          row[field] = dataTable[field][i]
-        }
-
-        data.push(row)
-      } else {
-        for (const field of fields) {
-          if (field === 'id') continue
-
-          if (!data.hasOwnProperty(field)) {
-            data[field] = []
-          }
-          if (dataTable[field].length <= i) {
-            throw new Error(`DataManager.getStagedData: field ${field} of invalid size in the DataManager.`)
-          }
-          data[field][j].push(dataTable[field][i])
-        }
-        j += 1
+    let returned = [[], 0]
+    try {
+      if (!this.tableNames.has(table)) {
+        throw new Error('DataManager.getStagedData: unknown table.')
       }
+
+      // check if we have a last index, if not set it to 0
+      if (Object.keys(this.tablesLastIndex).indexOf(table) === -1) {
+        this.tablesLastIndex[table] = 0
+      }
+
+      const dataTable = this.dataTables[table]
+      const fields = this.fieldNames(table)
+      const numRows = dataTable[fields.sample()].length
+      const lastIndex = this.tablesLastIndex[table]
+
+      // create a new array with the unpushed data (without cloning the parent array)
+      const data = format === 'dataArray' ? [] : {}
+      let j = 0
+      for (let i = lastIndex; i < numRows; i++) {
+        if (format === 'dataArray') {
+          const row = {}
+          for (const field of fields) {
+            if (field === 'id') continue
+
+            if (dataTable[field].length <= i) {
+              throw new Error(`DataManager.toDataArray: field array ${field} is of invalid size.`)
+            }
+            row[field] = dataTable[field][i]
+          }
+
+          data.push(row)
+        } else {
+          for (const field of fields) {
+            if (field === 'id') continue
+
+            if (!data.hasOwnProperty(field)) {
+              data[field] = []
+            }
+            if (dataTable[field].length <= i) {
+              throw new Error(`DataManager.getStagedData: field ${field} of invalid size in the DataManager.`)
+            }
+            data[field][j].push(dataTable[field][i])
+          }
+          j += 1
+        }
+      }
+      returned = [data, numRows]
+    } catch (e) {
+      debugError(e)
     }
-    return [data, numRows]
+    return returned
   }
 
   push() {
-    this.waitForPush = 0
-    for (let i = 0; i < this.connections.length; i++) {
-      const connection = this.connections[i]
-      if (connection.type === this.INTERFACE_REST) {
-        for (const table of this.toPush) {
-          // get last index pushed to the server
-          // get the new data from that index
-          if ((this.useLocalStorageCredentials) && (typeof this.local(connection.name) !== 'undefined') && (this.local(connection.name).hasOwnProperty('credentials'))) {
-            connection.credentials = this.local(connection.name).credentials
-          }
-
-          const [rows, lastIndex] = this.getStagedData(table)
-          const data = {
-            interface: connection.type,
-            credentials: connection.credentials,
-            query: connection.add,
-            variables: {
-              table,
-              rows,
-            },
-          }
-
-          // send the data through ajax in json format
-          $.ajax({
-            url: connection.endpoint,
-            type: 'POST',
-            data: JSON.stringify(data),
-            contentType: 'application/json',
-          })
-          .done(function (table, lastIndex, data, status) {
-            // once the ajax call is done, check status of http
-            // if 200 this.waitForPush = false and update the last updated index
-            // bind a context with the name of the table
-            this.tablesLastIndex[table] = lastIndex
-            this.toPush.delete(table)
-            debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
-          }.bind(this, table, lastIndex))
-          .fail(function (connection, table, xhr) {
-            const json = xhr.responseJSON || { message: '', shouldLog: false }
-            if (json.shouldLog) {
-              debugError('DataManager.push: user is not logged in -- will call the log function.')
-              // will pop a form to log
-              this.login(connection).then(() => { this.prepareToPush(table) })
-            } else {
-              debugError(`DataManager.push: could not push ${table} -- will retry`, json.message)
-              this.prepareToPush(table)
+    if ((hasConstructor(Deferred, this.loginDeferred) && this.loginDeferred.pending)) {
+      delay(this.addRate).then(() => {
+        this.push()
+      })
+    } else {
+      this.waitForPush = 0
+      for (let i = 0; i < this.connections.length; i++) {
+        const connection = this.connections[i]
+        if (connection.type === this.INTERFACE_REST) {
+          for (const table of this.toPush) {
+            // get last index pushed to the server
+            // get the new data from that index
+            if ((this.useLocalStorageCredentials) && (typeof this.local(connection.name) !== 'undefined') && (this.local(connection.name).hasOwnProperty('credentials'))) {
+              connection.credentials = this.local(connection.name).credentials
             }
-          }.bind(this, connection, table))
-        }
-      }
 
-      if (connection.type === this.INTERFACE_GRAPHQL) {
-        //
+            const [rows, lastIndex] = this.getStagedData(table)
+            const data = {
+              interface: connection.type,
+              credentials: connection.credentials,
+              query: connection.add,
+              variables: {
+                table,
+                rows,
+              },
+            }
+
+            // send the data through ajax in json format
+            $.ajax({
+              url: connection.endpoint,
+              type: 'POST',
+              data: JSON.stringify(data),
+              contentType: 'application/json',
+            })
+            .done(function (table, lastIndex, data, status) {
+              // once the ajax call is done, check status of http
+              // if 200 this.waitForPush = false and update the last updated index
+              // bind a context with the name of the table
+              this.tablesLastIndex[table] = lastIndex
+              this.toPush.delete(table)
+              debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
+            }.bind(this, table, lastIndex))
+            .fail(function (connection, table, xhr) {
+              const json = xhr.responseJSON || { message: '', shouldLog: false }
+              if (json.shouldLog) {
+                debugError('DataManager.push: user is not logged in -- will call the log function.')
+                // will pop a form to log
+                this.login(connection).then(() => { this.prepareToPush(table) })
+              } else {
+                debugError(`DataManager.push: could not push ${table} -- will retry`, json.message)
+                this.prepareToPush(table)
+              }
+            }.bind(this, connection, table))
+          }
+        }
+
+        if (connection.type === this.INTERFACE_GRAPHQL) {
+          //
+        }
       }
     }
   }
@@ -741,6 +850,9 @@ export default class DataManager {
           .then(() => {
             this.connections.push(connection)
             deferred.resolve(connection)
+          })
+          .catch((e) => {
+            deferred.reject(e)
           })
         } else {
           this.connections.push(connection)

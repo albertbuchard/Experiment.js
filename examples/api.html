@@ -45,7 +45,26 @@
 
     taskObject.startTask().then((message) => {
       console.log(message)
+      const deferred = new Deferred()
       taskObject.dataManager.setConnection({ endpoint: './api/api.php', credentials: { userId: 'test' } })
+      taskObject.context.stateManager.setPauseKeyStroke()
+      const tooltip = taskObject.context.stateManager.tooltip({position: [150,150], text: 'You are connected as test. And this is a tooltip, wether you like it or not.\nYou bet\nPretty cool!', duration: 1000})
+
+      const startedAt = taskObject.timeInMs
+      const textTool = `You are connected as test\n{n}ms have elapsed.`
+
+      const updateTooltip = function () {
+        const background = _.sampleSize(_.range(0,1,0.1),3).concat(1)
+        const fontColor = _.sampleSize(_.range(0,1,0.1),3).concat(1)
+        const rand = _.random(0,200)
+        taskObject.context.stateManager.tooltip({replace: false, background, fontColor, position: experiment.sizeToVec(taskObject.renderSize).subtract(new BABYLON.Vector2(200+rand,50+rand)), text: textTool.replace('{n}', taskObject.timeInMs - startedAt), duration: 1000})
+        if (!deferred.resolved) {setTimeout(updateTooltip, 150)}
+      }
+
+
+      updateTooltip()
+      //setTimeout(deferred.resolve, 5000)
+      tooltip.then(() => { console.log("This is the end of the tooltip baby.")})
     })
 
     window.taskObject = taskObject

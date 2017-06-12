@@ -19,6 +19,8 @@
  import DataManager from './src/framework/DataManager'
  import RessourceManager from './src/framework/RessourceManager'
 
+ import Loader from './src/framework/objects/Loader'
+
  import {
    Array,
    String,
@@ -42,6 +44,11 @@
    debugWarn,
    debugError,
    noop,
+   spreadToObject,
+   sizeToVec,
+   scaleSize,
+   hasConstructor,
+   preloadImages,
  } from './src/framework/utilities'
 
 
@@ -88,4 +95,10 @@
   debugWarn,
   debugError,
   noop,
+  spreadToObject,
+  sizeToVec,
+  scaleSize,
+  hasConstructor,
+  preloadImages,
+  Loader,
 }

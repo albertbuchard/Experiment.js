@@ -8,7 +8,12 @@ import RessourceManager from './RessourceManager'
 import State from './State'
 import DataManager from './DataManager'
 import EventData from './EventData'
-import { mandatory, debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor } from './utilities'
+import { mandatory,
+  debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor,
+  spreadToObject, Deferred, delay,
+  sizeToVec,
+  scaleSize,
+} from './utilities'
 
 /**
  * Manage lifecycle and variables through State objects.
@@ -107,60 +112,68 @@ export default class StateManager {
   }
 
   storeEvent(event = mandatory()) {
-    if (this.dataManager.constructor !== DataManager) {
-      throw new Error('StateManager.storeEvent: dataManager is not set, cannot store event.')
-    }
-
-    if (!event.handled) {
-      debuglog(event)
-      throw new Error('StateManager.storeEvent:cannot store an event that was not handled.')
-    }
-
-    if (event.stored) {
-      debuglog(event)
-      throw new Error('StateManager.storeEvent: Event already stored')
-    }
-
-    event.storedInErrorLog = false
-    let belongsTo = event.data.belongsTo
-    if (belongsTo.constructor !== Array) {
-      belongsTo = [belongsTo]
-    }
-
-    for (let i = 0; i < belongsTo.length; i++) {
-      try {
-        event.data.storedAt = this.timeInMs
-        event.stored = true
-
-        debuglog('StateManager.storeEvent: storing event.')
-        // this.dataManager.log(belongsTo[i], event)
-        this.dataManager.addRows(belongsTo[i], event.formatted)
-        debuglog('StateManager.storeEvent: event stored.', event)
-      } catch (error) {
-        debugError(`StateManager.storeEvent: Could not store data in ${belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
-        this.storeInErrorLog(event)
+    try {
+      if (this.dataManager.constructor !== DataManager) {
+        throw new Error('StateManager.storeEvent: dataManager is not set, cannot store event.')
       }
+
+      if (!event.handled) {
+        debuglog(event)
+        throw new Error('StateManager.storeEvent:cannot store an event that was not handled.')
+      }
+
+      if (event.stored) {
+        debuglog(event)
+        throw new Error('StateManager.storeEvent: Event already stored')
+      }
+
+      event.storedInErrorLog = false
+      let belongsTo = event.data.belongsTo
+      if (belongsTo.constructor !== Array) {
+        belongsTo = [belongsTo]
+      }
+
+      for (let i = 0; i < belongsTo.length; i++) {
+        try {
+          event.data.storedAt = this.timeInMs
+          event.stored = true
+
+          debuglog('StateManager.storeEvent: storing event.')
+          // this.dataManager.log(belongsTo[i], event)
+          this.dataManager.addRows(belongsTo[i], event.formatted)
+          debuglog('StateManager.storeEvent: event stored.', event)
+        } catch (error) {
+          debugError(`StateManager.storeEvent: Could not store data in ${belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
+          this.storeInErrorLog(event)
+        }
+      }
+    } catch (e) {
+      debugError(e)
     }
   }
 
   storeData(data = mandatory()) {
-    if (this.dataManager.constructor !== DataManager) {
-      throw new Error('StateManager.storeData: dataManager is not set, cannot store event.')
-    }
-
-    if (!(_.has(data, 'belongsTo'))) {
-      debuglog(data)
-      throw new Error('StateManager: data needs a belongsTo property in order to store it in the dataManager.')
-    }
-
-    data.storedInErrorLog = false
-    for (let i = 0; i < data.belongsTo.length; i++) {
-      try {
-        this.dataManager.addRows(data.belongsTo[i], data)
-      } catch (error) {
-        console.error(`StateManager: Could not store data in ${data.belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
-        this.storeInErrorLog(data)
+    try {
+      if (this.dataManager.constructor !== DataManager) {
+        throw new Error('StateManager.storeData: dataManager is not set, cannot store event.')
       }
+
+      if (!(_.has(data, 'belongsTo'))) {
+        debuglog(data)
+        throw new Error('StateManager: data needs a belongsTo property in order to store it in the dataManager.')
+      }
+
+      data.storedInErrorLog = false
+      for (let i = 0; i < data.belongsTo.length; i++) {
+        try {
+          this.dataManager.addRows(data.belongsTo[i], data)
+        } catch (error) {
+          console.error(`StateManager: Could not store data in ${data.belongsTo[i]} dataTable. Data was stored in the errorLog. DataManager error was: ${error}`)
+          this.storeInErrorLog(data)
+        }
+      }
+    } catch (e) {
+      debugError(e)
     }
   }
 
@@ -183,27 +196,32 @@ export default class StateManager {
    * @param {...string} stateKeys list of additional state
    */
   addState(...stateKeys) {
-    const returnedStates = []
-    let stateKey
-    for (let i = 0; i < stateKeys.length; i++) {
-      stateKey = stateKeys[i]
+    try {
+      const returnedStates = []
+      let stateKey
+      for (let i = 0; i < stateKeys.length; i++) {
+        stateKey = stateKeys[i]
 
-      if (stateKey.constructor !== String) {
-        throw new Error('StateManager: stateKey must be a string.')
+        if (stateKey.constructor !== String) {
+          throw new Error('StateManager: stateKey must be a string.')
+        }
+
+        if (_.has(this.states, stateKey)) {
+          throw new Error(`StateManager: a state with a similar stateKey '${stateKey}' already exists.`)
+        }
+
+        this.states[stateKey] = new State(this, stateKey)
+
+        debuglog(`StateManager: added state '${stateKey}'.`)
+
+        returnedStates.push(this.states[stateKey])
       }
 
-      if (_.has(this.states, stateKey)) {
-        throw new Error(`StateManager: a state with a similar stateKey '${stateKey}' already exists.`)
-      }
-
-      this.states[stateKey] = new State(this, stateKey)
-
-      debuglog(`StateManager: added state '${stateKey}'.`)
-
-      returnedStates.push(this.states[stateKey])
+      return (returnedStates.length === 1) ? returnedStates[0] : returnedStates
+    } catch (e) {
+      debugError(e)
+      return null
     }
-
-    return (returnedStates.length === 1) ? returnedStates[0] : returnedStates
   }
 
   /* === State change === */
@@ -214,7 +232,7 @@ export default class StateManager {
       this._currentStateKey = key
       this.states[key].awake(reload)
     } else {
-      throw new Error('StateManager: Invalid state key.')
+      debugError('StateManager: Invalid state key.')
     }
   }
 
@@ -230,24 +248,197 @@ export default class StateManager {
    * @returns {BABYLON.ScreenSpaceCanvas2D} GUI canvas
    */
   addGuiCanvas() {
-    const scene = this._parent
-    mustHaveConstructor(BABYLON.Scene, scene)
+    try {
+      const scene = this._parent
+      mustHaveConstructor(BABYLON.Scene, scene)
 
-    const canvasOptions = {
-      id: 'GUI',
-      backgroundFill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0, 0, 0, 0)),
-      backgroundRoundRadius: 0,
-      x: 0,
-      y: 0,
-      zOrder: 1,
+      const canvasOptions = {
+        id: 'GUI',
+        backgroundFill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0, 0, 0, 0)),
+        backgroundRoundRadius: 0,
+        x: 0,
+        y: 0,
+        zOrder: 1,
+      }
+
+      const GUI = new BABYLON.ScreenSpaceCanvas2D(scene, canvasOptions)
+
+      GUI.levelVisible = false
+      this.set('GUI', GUI)
+
+      return GUI
+    } catch (e) {
+      debugError(e)
+      return null
+    }
+  }
+
+  // TODO tooltip on the GUI to highlight specific positions
+  tooltip({ replace = false, position = null, size = null, spaced = null, text = '', fontName = '14pt Verdana', duration = null, event = new EventData(this.R.get.events_tooltipDismissed), background = null, fontColor = null }) {
+    // Set the default
+    spaced = spreadToObject(spaced, new BABYLON.Vector2(0, 0))
+    if ((duration === null) || (duration.constructor !== Promise)) {
+      if ((duration !== null) && (duration.constructor === Number)) {
+        duration = delay(duration)
+      } else {
+        duration = (new Deferred()).promise
+      }
     }
 
-    const GUI = new BABYLON.ScreenSpaceCanvas2D(scene, canvasOptions)
+    const guiCanvas = this.get('GUI')
+    guiCanvas.levelVisible = true
 
-    GUI.levelVisible = false
-    this.set('GUI', GUI)
+    const brownColor = [112 / 255, 102 / 255, 98 / 255, 0.95]
 
-    return GUI
+    let tooltips = this.get('tooltips', [])
+    if (tooltips.constructor === Object) {
+      tooltips = [tooltips]
+    }
+    const id = tooltips.length + 1
+
+    let tooltip = null
+    if (replace && tooltips.length) {
+      tooltip = tooltips[tooltips.length - 1]
+    } else if (tooltips.length) {
+      for (const temptool of tooltips) {
+        if (typeof temptool.box !== 'undefined') {
+          temptool.box.zOrder = (id - temptool.id) * 0.01
+          temptool.text.zOrder = ((id - temptool.id) * 0.01) - 0.001
+        }
+        if ((typeof temptool.disposed !== 'undefined') && (temptool.disposed)) {
+          temptool.box.zOrder = 0.001
+          temptool.text.zOrder = 0
+          tooltip = temptool
+          background = spreadToObject(background, new BABYLON.Color4(...brownColor))
+          break
+        }
+      }
+    }
+
+
+    if (tooltip !== null) {
+      tooltip.text.levelVisible = true
+      tooltip.box.levelVisible = true
+
+      tooltip.text.text = text
+
+      const tempPosition = tooltip.box.position.add(sizeToVec(tooltip.box.size).scale(0.5))
+      if (size === null) {
+        tooltip.box.width = tooltip.text.size.width + 24
+        tooltip.box.height = tooltip.text.size.height + 24
+      } else {
+        tooltip.box.width = size.width
+        tooltip.box.height = size.height
+      }
+
+      if (background !== null) {
+        background = spreadToObject(background, new BABYLON.Color4(...brownColor))
+        const brush = BABYLON.Canvas2D.GetSolidColorBrush(background)
+        tooltip.box.fill = brush
+      }
+
+      fontColor = spreadToObject(fontColor, new BABYLON.Color4(1, 1, 1, 1))
+
+      tooltip.text.defaultFontColor = fontColor
+
+
+      position = spreadToObject(position, tempPosition)
+      const nextPos = position.subtract(sizeToVec(tooltip.box.size).scale(0.5).add(spaced))
+        // TODO make a bounding function to make sure the tooltip is visible depending on the rendersize the position and size of the tooltip
+      tooltip.box.position = nextPos
+      tooltip.promise = duration
+      tooltip.event = event
+      tooltip.disposed = false
+    } else {
+      position = spreadToObject(position, new BABYLON.Vector2(0, 0))
+
+      const sizeDefault = spreadToObject(size, new BABYLON.Size(300, 300))
+
+      // const normalColor = [202 / 255, 64 / 255, 0, 0.95]
+
+      // let fontSuperSample = true
+      // let fontSignedDistanceField = false
+      // if (background === null) {
+      //   fontSuperSample = false
+      //   fontSignedDistanceField = true
+      // }
+
+      const fontSuperSample = false
+      const fontSignedDistanceField = true
+      background = spreadToObject(background, new BABYLON.Color4(...brownColor))
+      fontColor = spreadToObject(fontColor, new BABYLON.Color4(1, 1, 1, 1))
+
+      const brush = BABYLON.Canvas2D.GetSolidColorBrush(background)
+
+      const tooltipBox = new BABYLON.Rectangle2D({
+        parent: guiCanvas,
+        id: 'tooltipBox',
+        // position: position.subtract(size.scale(0.5).add(spaced)),
+        width: sizeDefault.width,
+        height: sizeDefault.height,
+        // border: brush,
+        // borderThickness: 2,
+        fill: brush,
+      })
+
+      const tooltipText = new BABYLON.Text2D(text, {
+        parent: tooltipBox,
+        id: 'tooltipText',
+        marginAlignment: 'h: center, v:center',
+        defaultFontColor: fontColor,
+        fontSuperSample,
+        fontSignedDistanceField,
+        fontName,
+      })
+
+      if (size === null) {
+        tooltipBox.width = tooltipText.size.width + 24
+        tooltipBox.height = tooltipText.size.height + 24
+      }
+
+      tooltipBox.position = position.subtract(sizeToVec(tooltipBox.size).scale(0.5).add(spaced))
+
+
+      tooltip = { box: tooltipBox, text: tooltipText, promise: duration, id, disposed: false, event }
+
+
+      this.set('tooltips', tooltips.concat(tooltip))
+    }
+
+    duration.then(() => {
+      if (tooltip.promise === duration) {
+        this.hideTooltip(tooltip)
+      }
+      if (event.constructor === EventData) {
+        event.happenedAt = this.timeInMs
+        this.addEvent(event)
+      }
+    })
+
+    return tooltip.promise
+  }
+
+  hideTooltip(...tooltips) {
+    const allTooltips = this.get('tooltips', [])
+    if (tooltips.length === 0) {
+      tooltips = allTooltips
+    }
+
+    // const newTooltips = []
+    for (const tooltip of allTooltips) {
+      if (tooltips.indexOf(tooltip) !== -1) {
+        if (typeof tooltip.box !== 'undefined') {
+          tooltip.box.levelVisible = false
+          tooltip.disposed = true // since dispose() is too slow, imitate the behavior by replacing old tooltip if necessary
+        }
+      }
+      // else {
+      //   newTooltips.push(tooltip)
+      // }
+    }
+    // allTooltips.length = 0
+
+    // this.set('tooltips', newTooltips)
   }
 
   /* === Pause State === */
@@ -259,9 +450,6 @@ export default class StateManager {
    */
   setPauseKeyStroke(key = 32, flag = null, addDefaultDesign = true) {
     const pauseState = function (options = null) {
-      if (typeof this.state === 'undefined') {
-        throw new Error('state.pauseState: state is undefined')
-      }
       const state = this.state
       const stateManager = this.stateManager
       const R = this.R
@@ -282,16 +470,11 @@ export default class StateManager {
 
 
     const unPause = function (options = null) {
-      if (typeof this.stateManager === 'undefined') { // TODO Discuss wether it is a good idea to check the context
-        throw new Error('state.unPause: state is undefined')
-      }
-
-
       if (options.data.keyCode === key) {
         if (this.stateManager.frozenState !== null) {
           this.stateManager.goToState(this.stateManager.frozenState)
         } else {
-          throw new Error('state.unPause: no frozen state !')
+          debugError('state.unPause: no frozen state !')
         }
       }
 
@@ -327,82 +510,91 @@ export default class StateManager {
     }
 
     const awakePause = function (options = null) {
-      if (typeof this.taskObject === 'undefined') {
-        throw new Error('state.awakePause: taskObject is undefined')
+      try {
+        if (typeof this.taskObject === 'undefined') {
+          throw new Error('state.awakePause: taskObject is undefined')
+        }
+        const stateManager = this.stateManager
+
+        const pauseBackground2D = stateManager.get('pauseBackground2D')
+        const canvas = this.scene.screenCanvas
+
+        if (pauseBackground2D !== null) {
+          pauseBackground2D.size = canvas.size
+          pauseBackground2D.levelVisible = true
+        } else {
+          if (typeof canvas === 'undefined') {
+            return ('awakePause: initialCanvas is undefined.')
+          }
+          // draw a rect2d of canvas size with background opacity 0.5
+          // draw a large text2d "PAUSE" inside
+          const baseOptions = {
+            id: 'pauseBackground2D',
+            text: 'Pause',
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            height: canvas.height,
+            fill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.3, 0.3, 0.3, 0.5)),
+            fontName: '40pt Verdana',
+            backgroundRoundRadius: 0,
+          }
+
+          options = _.extend(baseOptions, options)
+
+          let customSized = canvas.size
+          if ((options.width !== canvas.width) || (options.height !== canvas.height)) {
+            customSized = new BABYLON.Size(options.width, options.height)
+          }
+
+          const canvasOptions = {
+            id: options.id,
+            roundRadius: options.backgroundRoundRadius,
+            fill: options.fill,
+            parent: this.scene.screenCanvas,
+            marginAlignment: 'h:center, v: center',
+            size: customSized,
+            zOrder: 0,
+            children: [
+              new BABYLON.Text2D(options.text, {
+                fontName: options.fontName,
+                marginAlignment: 'h: center, v:top',
+                fontSignedDistanceField: true,
+                zOrder: 0,
+              }),
+            ],
+          }
+
+          const pauseBackground2D = new BABYLON.Rectangle2D(canvasOptions)
+
+          stateManager.set('pauseBackground2D', pauseBackground2D) // TODO Make those string part of R.
+        }
+        return ('state.awakePause: resolved')
+      } catch (e) {
+        debugError(e)
+        return e
       }
-      const stateManager = this.stateManager
-
-      const pauseBackground2D = stateManager.get('pauseBackground2D')
-      const canvas = this.scene.screenCanvas
-
-      if (pauseBackground2D !== null) {
-        pauseBackground2D.size = canvas.size
-        pauseBackground2D.levelVisible = true
-      } else {
-        if (typeof canvas === 'undefined') {
-          return ('awakePause: initialCanvas is undefined.')
-        }
-        // draw a rect2d of canvas size with background opacity 0.5
-        // draw a large text2d "PAUSE" inside
-        const baseOptions = {
-          id: 'pauseBackground2D',
-          text: 'Pause',
-          x: 0,
-          y: 0,
-          width: canvas.width,
-          height: canvas.height,
-          fill: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.3, 0.3, 0.3, 0.5)),
-          fontName: '40pt Verdana',
-          backgroundRoundRadius: 0,
-        }
-
-        options = _.extend(baseOptions, options)
-
-        let customSized = canvas.size
-        if ((options.width !== canvas.width) || (options.height !== canvas.height)) {
-          customSized = new BABYLON.Size(options.width, options.height)
-        }
-
-        const canvasOptions = {
-          id: options.id,
-          roundRadius: options.backgroundRoundRadius,
-          fill: options.fill,
-          parent: this.scene.screenCanvas,
-          marginAlignment: 'h:center, v: center',
-          size: customSized,
-          zOrder: 0,
-          children: [
-            new BABYLON.Text2D(options.text, {
-              fontName: options.fontName,
-              marginAlignment: 'h: center, v:top',
-              fontSignedDistanceField: true,
-              zOrder: 0,
-            }),
-          ],
-        }
-
-        const pauseBackground2D = new BABYLON.Rectangle2D(canvasOptions)
-
-        stateManager.set('pauseBackground2D', pauseBackground2D) // TODO Make those string part of R.
-      }
-
-      return ('state.awakePause: resolved')
     }
 
     const endPause = function () {
-      if (typeof this.state === 'undefined') {
-        throw new Error('state.endPause: state is undefined')
-      }
-      const stateManager = this.stateManager
-      const pauseBackground2D = stateManager.get('pauseBackground2D')
+      try {
+        if (typeof this.state === 'undefined') {
+          throw new Error('state.endPause: state is undefined')
+        }
+        const stateManager = this.stateManager
+        const pauseBackground2D = stateManager.get('pauseBackground2D')
 
-      if (pauseBackground2D !== null) {
-        // pauseBackground2D.dispose()
-        // stateManager.set('pauseBackground2D', null)
-        pauseBackground2D.levelVisible = false
-      }
+        if (pauseBackground2D !== null) {
+          // pauseBackground2D.dispose()
+          // stateManager.set('pauseBackground2D', null)
+          pauseBackground2D.levelVisible = false
+        }
 
-      return ('state.endPause: resolved')
+        return ('state.endPause: resolved')
+      } catch (e) {
+        debugError(e)
+        return e
+      }
     }
 
     this.registerAwakeningFunction(this.R.get.states_pause, awakePause)
@@ -421,10 +613,10 @@ export default class StateManager {
 
   stateWasUnfreezed(stateKey = mandatory()) {
     if (this.frozenState !== stateKey) {
-      throw new Error('StateManager.stateWasUnfreezed: stateKey does not correspond to the frozenState')
+      debugError('StateManager.stateWasUnfreezed: stateKey does not correspond to the frozenState')
+    } else {
+      this.frozenState = null
     }
-
-    this.frozenState = null
   }
 
   /* === Time event === */
@@ -465,7 +657,8 @@ export default class StateManager {
       if (belongsTo.constructor === String) {
         belongsTo = [belongsTo]
       } else {
-        throw new Error('stateManager.newEvent: belongs to need to be either a string or an array')
+        debugError('stateManager.newEvent: belongs to need to be either a string or an array')
+        return null
       }
     } else if (belongsTo.indexOf('globalLog') === -1) {
         // add the missing globalLog to belongsTo
@@ -594,14 +787,30 @@ export default class StateManager {
    * @param  {function} handlingFunction Function that should return a Promise.
    */
   registerEventFunction(stateKey, eventFlag, ...handlingFunctions) {
-    mustBeDefined(stateKey, eventFlag, ...handlingFunctions)
-    mustHaveConstructor(Function, ...handlingFunctions)
+    try {
+      mustBeDefined(stateKey, eventFlag, ...handlingFunctions)
+      mustHaveConstructor(Function, ...handlingFunctions)
 
-    if (_.has(this.states, stateKey)) {
-      this.states[stateKey].registerEventFunctions(eventFlag, true, ...handlingFunctions) // TODO Handle overwrite better ?
-    } else {
-      throw new Error(`StateManager: Invalid state key '${stateKey}'. Create the state before adding event handling functions.`)
+      if (_.has(this.states, stateKey)) {
+        this.states[stateKey].registerEventFunctions(eventFlag, true, ...handlingFunctions) // TODO Handle overwrite better ?
+      } else {
+        throw new Error(`StateManager: Invalid state key '${stateKey}'. Create the state before adding event handling functions.`)
+      }
+    } catch (e) {
+      debugError(e)
     }
+  }
+
+  onNext(eventFlag, ...handlingFunctions) {
+    return this.currentState.onNext(eventFlag, ...handlingFunctions)
+  }
+
+  resolveOnKey(...args) {
+    return this.currentState.resolveOnKey(...args)
+  }
+
+  resolveOnClick(...args) {
+    return this.currentState.resolveOnClick(...args)
   }
 
   /**
@@ -614,7 +823,7 @@ export default class StateManager {
     if (_.has(this.states, stateKey)) {
       this.states[stateKey].registerCycleFunctions('awakening', overwrite, handlingFunction)
     } else {
-      throw new Error(`StateManager: Invalid state key '${stateKey}'. Create the state before adding awakening handling functions.`)
+      debugError(`StateManager: Invalid state key '${stateKey}'. Create the state before adding awakening handling functions.`)
     }
   }
 
@@ -622,7 +831,7 @@ export default class StateManager {
     if (_.has(this.states, stateKey)) {
       this.states[stateKey].registerCycleFunctions('ending', overwrite, handlingFunction)
     } else {
-      throw new Error(`StateManager: Invalid state key '${stateKey}'. Create the state before adding awakening handling functions.`)
+      debugError(`StateManager: Invalid state key '${stateKey}'. Create the state before adding awakening handling functions.`)
     }
   }
 
@@ -631,7 +840,7 @@ export default class StateManager {
       this.states[stateKey].registerCycleFunctions('udpate', overwrite, handlingFunction)
       debuglog(`StateManager: handling function added to awakeningFunctions array for state '${stateKey}'`)
     } else {
-      throw new Error(`StateManager: Invalid state key '${stateKey}'. Create the state before adding awakening handling functions.`)
+      debugError(`StateManager: Invalid state key '${stateKey}'. Create the state before adding awakening handling functions.`)
     }
   }
 
@@ -644,13 +853,14 @@ export default class StateManager {
    */
   registerGlobalFunction(func = mandatory(), name = null) {
     if (func.constructor !== Function) {
-      throw new Error('StateManager.registerGlobalFunction: func is not a function')
-    }
-    // TODO checks that it works
-    // var promiseFunction = looksLikeAPromise(func) ? func : Promise.method(func); Do no promisify here - give user the choice
-    if (name === null) { name = func.name }
+      debugError('StateManager.registerGlobalFunction: func is not a function')
+    } else {
+      // TODO checks that it works
+      // var promiseFunction = looksLikeAPromise(func) ? func : Promise.method(func); Do no promisify here - give user the choice
+      if (name === null) { name = func.name }
 
-    this.globalFunctions[name] = func
+      this.globalFunctions[name] = func
+    }
   }
 
   /**
@@ -676,30 +886,25 @@ export default class StateManager {
    * @return {promise}
    */
   call(name, ...args) {
-    mustBeDefined(name)
-
     if (typeof name === 'undefined') {
-      throw new Error('StateManager.call: name of the function needs to be defined.')
-    }
-    if (_.has(this.globalFunctions, name)) {
+      debugError('StateManager.call: name of the function needs to be defined.')
+    } else if (_.has(this.globalFunctions, name)) {
       return (this.globalFunctions[name].bind(this.context)(...args))
+    } else {
+      debugWarn(`StateManager.call: globals do not contain function '${name}'`)
     }
-    debugWarn(`StateManager.call: globals do not contain function '${name}'`)
     return undefined
   }
 
   promise(name, ...args) {
-    mustBeDefined(name)
-
     if (typeof name === 'undefined') {
-      throw new Error('StateManager.promiseGlobalFunction: name is undefined.')
-    }
-
-    if (_.has(this.globalFunctions, name)) {
+      debugError('StateManager.promiseGlobalFunction: name is undefined.')
+    } else if (_.has(this.globalFunctions, name)) {
       return (Promise.method(this.globalFunctions[name]).bind(this.context)(...args))
+    } else {
+      debugWarn(`StateManager.promiseGlobalFunction: globals do not contain function '${name}'`)
     }
 
-    debugWarn(`StateManager.promiseGlobalFunction: globals do not contain function '${name}'`)
     return undefined
   }
 
@@ -713,10 +918,10 @@ export default class StateManager {
    */
   recurseOnGlobalFunction(name = mandatory(), amount = mandatory(), args = [], results = []) {
     if (!_.has(this.globalFunctions, name)) {
-      throw new Error(`StateManager.recurseOnGlobalFunction: globals do not contain function '${name}'`)
+      debugError(`StateManager.recurseOnGlobalFunction: globals do not contain function '${name}'`)
+      return null
     }
-
-    // Base case - just return the promisified result
+      // Base case - just return the promisified result
     if (amount === 0) {
       return new Promise((resolve) => {
         resolve(results)
@@ -783,7 +988,7 @@ export default class StateManager {
     if (_.has(this.states, key)) {
       return (this.states[key])
     }
-    throw new Error('StateManager: Invalid state key.')
+    debugError('StateManager: Invalid state key.')
   }
 
   /* ======== Getters and Setters ======== */
@@ -829,7 +1034,7 @@ export default class StateManager {
     if (_.has(this.states, key)) {
       this.goToState(key)
     } else {
-      throw new Error('StateManager: Invalid state key.')
+      debugError('StateManager: Invalid state key.')
     }
   }
 
@@ -841,7 +1046,7 @@ export default class StateManager {
     if (typeof state.key !== 'undefined') {
       this.currentStateKey = state.key
     } else {
-      throw new Error('StateManager: Invalid state, it has no state key defined.')
+      debugError('StateManager: Invalid state, it has no state key defined.')
     }
   }
 
@@ -850,7 +1055,7 @@ export default class StateManager {
   }
 
   set eventHeap(value) { // eslint-disable-line
-    throw new Error('StateManager: eventHeap is readonly. Add events through the class methods.')
+    debugError('StateManager: eventHeap is readonly. Add events through the class methods.')
   }
 
   get firstEvent() {
@@ -862,7 +1067,7 @@ export default class StateManager {
 
   set firstEvent(value) {
     // TODO not implemented -- maybe somekind of bruteforce to have an important input be treated first
-    throw new Error('StateManager: firstEvent is readonly.')
+    debugError('StateManager: firstEvent is readonly.')
   }
 
   /* === Time functions === */

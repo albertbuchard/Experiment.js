@@ -31,6 +31,7 @@ import {
   debugError,
   mustHaveConstructor,
   delay,
+  hasConstructor,
 } from './utilities'
 
 
@@ -520,6 +521,7 @@ export default class TaskObject {
         wasHandled: 'was_handled',
         beingHandled: 'being_handled',
         modalDismissed: 'modalDismissed',
+        tooltipDismissed: 'tooltipDismissed',
       },
     })
 
@@ -802,6 +804,8 @@ export default class TaskObject {
     scene.initialCanvas = initialCanvas
     scene.initialCamera = camera
 
+    scene.initialCanvas.lastResize = this.timeInMs
+
     /* Create a GUI canvas */
     scene.initialGui = scene.stateManager.addGuiCanvas()
 
@@ -814,16 +818,27 @@ export default class TaskObject {
 
     /* --- Resize handler --- */
     const updateContentFrame = function () {
+      // this refers to the scene here
       if (customSized) {
         this.initialCanvas.resizeAt = this.parentTaskObject.timeInMs + 1000
-        delay(1100).then(() => {
-          if (this.initialCanvas.resizeAt < this.parentTaskObject.timeInMs) {
+        delay(1000).then(() => {
+          if ((this.parentTaskObject.timeInMs - this.initialCanvas.lastResize > 100) && (this.initialCanvas.resizeAt < this.parentTaskObject.timeInMs)) {
             // ((this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2), (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2))
+            this.initialCanvas.lastResize = this.parentTaskObject.timeInMs
             const { size: customSized } = getCanvasDimensions()
             debugWarn('scene.updateContentFrame: window has been resized ', customSized)
             this.initialCanvas.size = customSized
-            if ((typeof scene.onResize !== 'undefined') && (scene.onResize.constructor === Function)) {
-              scene.onResize.bind(this.parentTaskObject.context)()
+
+            // check if the user has defined custom resize functions
+            if ((typeof this.onResize !== 'undefined') && (this.onResize !== null)) {
+              if (this.onResize.constructor === Function) {
+                this.onResize = [this.onResize]
+              }
+
+              for (const f of this.onResize) {
+                if (f.constructor !== Function) continue
+                f.bind(this.parentTaskObject.context)()
+              }
             }
           }
         })
@@ -832,6 +847,13 @@ export default class TaskObject {
 
 
     scene.updateContentFrame = updateContentFrame
+
+    /**
+     * Custom resize functions called by updateContentFrame. Can be set by the user
+     * to perform scene updates on resize. Can be an array of function or a single function.
+     * @type {!function|array}
+     */
+    scene.onResize = null
 
     /* Scene update */
     scene.registerBeforeRender(() => {
@@ -847,7 +869,7 @@ export default class TaskObject {
       throw new Error('StateManager.setCheckpoint: no dataManager')
     }
 
-    this.dataManager.setConnection(variables)
+    return this.dataManager.setConnection(variables)
     .then((connection) => { this.connection = connection })
     .catch((error) => { debugError(error) })
   }
@@ -1093,21 +1115,35 @@ export default class TaskObject {
    * @returns {type} Description
    */
   modal({ type = 'centralLarge', title = '', content = '', event = new EventData(this.R.get.events_modalDismissed) }) {
+    this.dismissModal()
     this.currentModal = { data: { type, title, content, event } }
+    const deferred = new Deferred()
+
+    this.currentModal.deferred = deferred
 
     const modalBox = new SmartModal(type, function dismissed() {
       if ((event.constructor === EventData) && (this.stateManager !== null)) {
+        event.happenedAt = this.stateManager.timeInMs
         this.stateManager.addEvent(event)
-        this.taskObject.currentModal = null
       }
+
+      this.taskObject.currentModal.deferred.resolve('Modal closed.')
+      this.taskObject.currentModal = null
     }.bind(this.context))
 
     modalBox.title = title
     modalBox.content = content
 
     this.currentModal.modalBox = modalBox
+    return deferred.promise
   }
 
+  dismissModal() {
+    if ((this.currentModal !== null) && (hasConstructor(SmartModal, this.currentModal.modalBox))) {
+      this.currentModal.modalBox.callThenDestroy()
+      this.currentModal = null
+    }
+  }
 
   /* === Animation helpers === */
   animateFloat(object, property, from, to) {

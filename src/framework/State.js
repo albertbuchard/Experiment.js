@@ -3,7 +3,7 @@
 import _ from 'lodash'
 import Promise from 'bluebird'
 import EventData from './EventData'
-import { mandatory, debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor } from './utilities'
+import { mandatory, debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor, delay, Deferred } from './utilities'
 
 /* State object has a specific way to handle input and update objects */
 export default class State {
@@ -27,6 +27,13 @@ export default class State {
      * @type {Object}
      */
     this._eventFunctions = {}
+
+    /**
+     * Object containing array of function to be called once for specific events
+     * The key of those properties are the event flags. Handling functions should return a Promise.
+     * @type {Object}
+     */
+    this._nextEventFunctions = {}
 
     /**
      * Array of handling function to be called when the state awaken, just after state change.
@@ -165,6 +172,7 @@ export default class State {
     // for each input flag have a specific function ready - that can be customizable
     // rename input with Event ?
     // make a promise and chain it with .then(stateHasFinishedHandlingEvent())
+    let handled = false
     if (this.hasEventFunction(event.flag)) {
       /* Promise allow for assynchronous handling of events */
       const eventFunctions = this._eventFunctions[event.flag]
@@ -197,10 +205,124 @@ export default class State {
             debugError(error)
           })
       }
-    } else {
+      handled = true
+    }
+    if (this._nextEventFunctions.hasOwnProperty(event.flag)) {
+      let eventFunctions = this._nextEventFunctions[event.flag]
+      if (eventFunctions !== null) {
+        if (eventFunctions.constructor === Function) { eventFunctions = [eventFunctions] }
+        for (const eventFunction of eventFunctions) {
+          Promise.method(eventFunction)(event)
+            .then(function (functionName, data) {
+              /* Promise ran as expected, returned data */
+              debuglog(data)
+              const eventClone = _.cloneDeep(event)
+              eventClone.data.handlingFunction = functionName
+              this._stateManager.stateHasFinishedHandlingEvent(eventClone)
+            }.bind(this, eventFunction.name))
+            .catch((error) => {
+              /* an error occured */
+              debugError(error)
+            })
+        }
+        this._nextEventFunctions[event.flag].length = 0
+        handled = true
+      }
+    }
+
+    if (!handled) {
       this._stateManager.stateHasFinishedHandlingEvent(event)
       debuglog(`State: Event '${event.flag}' not handled by state '${this.stateKey}'`)
     }
+  }
+
+  onNext(eventFlag, ...handlingFunctions) {
+    try {
+      mustBeDefined(eventFlag, ...handlingFunctions)
+      mustHaveConstructor(Function, ...handlingFunctions)
+
+      // checks if functions should be stacked in an array for this flag
+      if (this._nextEventFunctions.hasOwnProperty(eventFlag)) {
+        if (this._nextEventFunctions[eventFlag].constructor === Array) {
+          // push the handlingFunction to the array of _eventFunctions[eventFlag]
+          this._nextEventFunctions[eventFlag] = this._nextEventFunctions[eventFlag].concat(handlingFunctions)
+          debuglog(`State ${this.stateKey}.onNext: several handling functions - handling function pushed to the array of event functions on event '${eventFlag}'`)
+        } else {
+          // creates array of event function
+          this._nextEventFunctions[eventFlag] = [this._nextEventFunctions[eventFlag]].concat(handlingFunctions)
+          debuglog(`State ${this.stateKey}.onNext: several handling functions - array created for handling functions for state on event '${eventFlag}'`)
+        }
+      } else {
+        this._nextEventFunctions[eventFlag] = handlingFunctions
+        debuglog(`State ${this.stateKey}.onNext: handling function added to state '${this.stateKey}' for event '${eventFlag}'`)
+      }
+    } catch (e) {
+      debugError(e)
+    }
+  }
+
+  resolveOnKey(options = { key: null, except: [32], eventFlag: 'key_down' }) {
+    const baseOptions = { key: null, except: [32], eventFlag: 'key_down' }
+
+    if (options.constructor !== Object) {
+      if (options.constructor === Number) {
+        baseOptions.key = options
+        options = {}
+      } else {
+        debugError('State.resolveOnKey: invalid options')
+        return null
+      }
+    }
+
+    let { key, except, eventFlag } = _.extend(baseOptions, options) //eslint-disable-line
+    if ((key !== null) && (key.constructor !== Array)) {
+      if (key.constructor === Number) {
+        key = [key]
+      } else {
+        debugError('State.resolveOnKey: key must be numeric')
+        return null
+      }
+    }
+
+    if ((typeof except === 'undefined') || (except === null)) {
+      except = []
+    }
+
+    if (except.constructor !== Array) {
+      if (except.constructor === Number) {
+        except = [except]
+      } else {
+        debugError('State.resolveOnKey: except must be numeric')
+        return null
+      }
+    }
+
+
+    const deferred = new Deferred()
+    const f = (e) => {
+      if ((key === null && except.indexOf(e.data.keyCode) === -1) || (key !== null && key.indexOf(e.data.keyCode) !== -1)) {
+        deferred.resolve(e)
+        return `State ${this.stateKey}.resolveOnKey: tested on '${key}' and resolved because key '${e.data.keyCode}' pressed`
+      } else if (!deferred.resolved) {
+        delay(5).then(() => { this.onNext(eventFlag, f) })
+        return `State ${this.stateKey}.resolveOnKey: tested on '${key}' and did not resolved because wrong key '${e.data.keyCode}' pressed`
+      }
+      return `State ${this.stateKey}.resolveOnKey: should not stay in the function stack`
+    }
+    this.onNext(eventFlag, f)
+
+    return deferred.promise
+  }
+
+  resolveOnClick(eventFlag = 'mouse_click') {
+    const deferred = new Deferred()
+    const f = (e) => {
+      deferred.resolve(e)
+      return `State ${this.stateKey}.resolveOnClick: resolved`
+    }
+    this.onNext(eventFlag, f)
+
+    return deferred.promise
   }
 
   freeze() {

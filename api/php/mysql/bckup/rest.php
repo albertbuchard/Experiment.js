@@ -8,11 +8,9 @@ function prepare_and_execute($bdd, $query, $params = null) {
     if ($req) {
       return $req;
     } else {
-      var_dump("ONE");
       throw new Exception("prepare_and_execute: update was unsuccessful -- " . $req->errorInfo()[2], 1);
     }
   } catch (Exception $e) {
-    var_dump("TWO");
     throw new Exception("prepare_and_execute: error. ". $e['message'], 1);
   }
 }
@@ -42,70 +40,6 @@ function bind_values($req, $params) {
   }
 }
 
-function signup($bdd, $credentials) {
-  if ((!is_array($credentials)) || (!isset($credentials['userId'])) || (!isset($credentials['password']))) {
-    throw new Exception("login: invalid credentials", 1);
-  }
-
-  try {
-
-    $userId = $credentials['userId'];
-    $password = $credentials['password'];
-
-
-    $checkExist = get_user($bdd, $userId);
-    if ($checkExist->rowCount() > 0) {
-      throw new Exception("signup: user already exists", 1);
-    }
-
-
-    // TODO Think of potential attack here and how to protect
-    // Check valid user ID -- needs to be a mturkId
-
-    $tempsShoudAddUserId = $GLOBALS['_SHOULD_SET_USERID_FOR_ALL_ADD'];
-    $GLOBALS['_SHOULD_SET_USERID_FOR_ALL_ADD'] = false;
-    $GLOBALS['userId'] = $userId;
-
-    $rows = add_rows($bdd, 'users', ["userId" => $userId, "password" => password_hash($password, PASSWORD_DEFAULT), "type" => 2]);
-
-    $GLOBALS['_SHOULD_SET_USERID_FOR_ALL_ADD'] = $tempsShoudAddUserId;
-
-    $count = count($rows);
-    if ($count == 1) {
-        // generate logKey
-        $k = range("q","9 ");
-        shuffle($k);
-        $logKey = substr(implode($k), 0, 20);
-        set_logkey($bdd, $userId, $logKey);
-
-        return ['type' => $rows[0]['type'], 'userId' => $userId, 'logKey' => $logKey];
-    } elseif ($count == 0) {
-      throw new Exception("signup: could not create user " . $count, 1);
-    } else {
-      // userId should be unique
-      throw new Exception("signup: duplicated id ? " . $count, 1);
-    }
-  } catch (Exception $e) {
-    throw $e;
-  }
-}
-
-function get_user($bdd, $userId) {
-    try {
-      // get user from bd with userid
-      $query = "SELECT password, type FROM users
-                  WHERE userId = :userId";
-
-      $params = [];
-      $params['userId'] = $userId;
-
-      $req = prepare_and_execute($bdd, $query, $params);
-      return $req;
-    } catch (Exception $e) {
-      throw $e;
-    }
-}
-
 function login($bdd, $credentials) {
     if ((!is_array($credentials)) || (!isset($credentials['userId'])) || (!isset($credentials['password']))) {
       throw new Exception("login: invalid credentials", 1);
@@ -116,7 +50,14 @@ function login($bdd, $credentials) {
       $userId = $credentials['userId'];
       $password = $credentials['password'];
 
-      $req = get_user($bdd, $userId);
+      // get user from bd with userid
+      $query = "SELECT password, type FROM users
+                  WHERE userId = :userId";
+
+      $params = [];
+      $params['userId'] = $userId;
+
+      $req = prepare_and_execute($bdd, $query, $params);
       $count = $req->rowCount();
       if ($count == 1) {
         $rows = $req->fetchAll(PDO::FETCH_ASSOC);
@@ -133,7 +74,6 @@ function login($bdd, $credentials) {
 
           return ['type' => $rows[0]['type'], 'userId' => $userId, 'logKey' => $logKey];
         } else {
-          // invalid password
           return false;
         }
       } elseif ($count == 0) {
@@ -141,7 +81,7 @@ function login($bdd, $credentials) {
         return false;
       } else {
         // userId should be unique
-        throw new Exception("login: duplicated id ? " . $count, 1);
+        throw new Exception("is_accredited: duplicated id ? " . $count, 1);
       }
     } catch (Exception $e) {
       throw $e;
@@ -187,7 +127,6 @@ function check_logkey_and_refresh($bdd, $userId, $logKeyTime) {
   if (is_int($GLOBALS['_LOGKEY_EXPIRES_IN'])) {
     $return = false;
     $params = ['userId' => $userId];
-    $logKeyQuery = "";
     // check that the key has not expired
     if  ($GLOBALS['_LOGKEY_EXPIRES_IN']+intval($logKeyTime) > get_timestamp_ms()) {
       //updated the logKeyTime to now so as to prevent logout
@@ -260,7 +199,7 @@ function is_accredited($bdd, $data = []) {
 }
 
 function is_row_object($row) {
-  if ((is_array($row)) && (count($row) > 0) && (!is_array(reset($row)))) {
+  if ((is_array($row)) && (count($row) > 0) && (!is_array($row[0]))) {
     return true;
   } else {
     return false;
@@ -323,7 +262,7 @@ function set_user_timestamp($rows, $userId) {
 
 function add_rows($bdd, $table, $rows) {
   if (!pdo_ping($bdd)){
-    throw new Exception("add_rows: bdd is not a valid pdo connection", 1);
+    throw new Exception("is_accredited: bdd is not a valid pdo connection", 1);
   }
 
   if ($GLOBALS['userId'] === null) {

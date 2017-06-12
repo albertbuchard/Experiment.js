@@ -3,12 +3,23 @@
  *
  *
  */
-
+import $ from 'jquery'
 import _ from 'lodash'
 import math from 'experiment-mathjs'
 import Promise from 'bluebird'
 
 import { DEBUG_MODE_ON } from '../config'
+
+Promise.config({
+    // Enable warnings
+  warnings: false,
+    // Enable long stack traces
+  longStackTraces: false,
+    // Enable cancellation
+  cancellation: false,
+    // Enable monitoring
+  monitoring: false,
+})
 
 /**
  * noop - just your friendly empty function
@@ -42,11 +53,35 @@ function mandatory(param = '') {
 function mustBeDefined(...args) {
   for (let i = 0; i < args.length; i++) {
     if (typeof args[i] === 'undefined') {
-      throw new Error(`Argument ${i} is undefined.`)
+      throw new Error(`Argument ${i} is undefined.`) // TODO transform that into debugError...
     }
   }
 
   return true
+}
+
+/**
+ * Creates a new object of class TargetClass = defaultValue.constructor from the object parameter, only if the object is not
+ * already an instance of TargetClass. If object is an array, the object is created like so new TargetClass(...object)
+ * @method spreadToObject
+ * @param  {Object|Array}       object      The object or array to be converted into TargetClass
+ * @param  {Object}       defaultValue      If the object is undefined or null this value is returned.
+ *                                          If not, the object is Transformed into the TargetClass which is defaultValue.constructor
+ * @return {[type]}                         Object of class TargetClass
+ */
+function spreadToObject(object, defaultValue) {
+  if ((typeof object === 'undefined') || (object === null)) {
+    return defaultValue
+  }
+
+  const TargetClass = defaultValue.constructor
+  if (object.constructor === TargetClass) {
+    return object
+  } else if (object.constructor === Array) {
+    return new TargetClass(...object)
+  }
+  debugWarn('spreadToObject: cannot spread to target class')
+  return defaultValue
 }
 
 /**
@@ -59,6 +94,14 @@ function mustBeDefined(...args) {
 function mustHaveConstructor(constructorObject, ...args) {
   if (args.allHaveConstructor(constructorObject) === false) {
     throw new Error('Wrong constructor in arguments.')
+  }
+
+  return true
+}
+
+function hasConstructor(constructorObject, ...args) {
+  if (args.allHaveConstructor(constructorObject) === false) {
+    return false
   }
 
   return true
@@ -133,6 +176,7 @@ function Deferred() {
   this.reject = null
   this.resolved = false
   this.rejected = false
+  this.pending = true
   this.status = 0
   /* A newly created Pomise object.
    * Initially in pending state.
@@ -140,10 +184,12 @@ function Deferred() {
   this.promise = new Promise((resolve, reject) => {
     this.resolve = (data) => {
       this.resolved = true
+      this.pending = false
       resolve(data)
     }
     this.reject = (e) => {
       this.rejected = true
+      this.pending = false
       if (e.constructor === String) {
         e = new Error(e)
       }
@@ -197,6 +243,38 @@ function samplePermutation(sequence = mandatory(), repetition = false, n = null)
   }
 
   return (permutation)
+}
+
+/* ======= Loading ======= */
+function preloadImages(...images) { // TODO make it a RessourceManager function
+  const imgArray = []
+  const promiseArray = []
+  for (const image of images) {
+    if (image.constructor === String) {
+      const deferred = new Deferred()
+      const img = new Image()
+      img.src = image
+      imgArray.push(img)
+
+      if (img.complete) {
+        deferred.resolve()
+      } else {
+        img.addEventListener('load', function () { this.resolve() }.bind(deferred))
+      }
+
+      // $(img).on('load', function () {
+      //   this.resolve()
+      //   debugError('THIS IS LOAD')
+      // }.bind(deferred))
+
+      promiseArray.push(deferred.promise)
+    } else {
+      debugError('preloadImages: invalid string url ', image)
+    }
+  }
+
+
+  return [Promise.all(promiseArray), imgArray]
 }
 
 /* =============== Personalized Matrix Functions =============== */
@@ -254,6 +332,24 @@ function diag(matrixObject = mandatory(), setTo = null): Array {
   }
 
   return ([diagonalValues, matrixObject])
+}
+
+/* ======= BABYLON HELPERS ======= */
+
+function sizeToVec(size = null) {
+  mustHaveConstructor(BABYLON.Size, size)
+  return (new BABYLON.Vector2(size.width, size.height))
+}
+
+function scaleSize(size = null, scale = 1) {
+  mustHaveConstructor(BABYLON.Size, size)
+
+  const floatScale = parseFloat(scale)
+  if (isNaN(floatScale)) {
+    throw new Error(`taskObject.scaleSize: scale is invalid ${scale}`)
+  }
+
+  return new BABYLON.Size(size.width * floatScale, size.height * floatScale)
 }
 
 /* ======= Number functions ======= */
@@ -529,7 +625,7 @@ Array.prototype.exclude = function exclude(values) {
 
 Array.prototype.allHaveConstructor = function allHaveConstructor(constructorObject) {
   for (let i = 0; i < this.length; i++) {
-    if (this[i].constructor !== constructorObject) {
+    if ((typeof this[i] === 'undefined') || (this[i] === null) || (this[i].constructor !== constructorObject)) {
       return false
     }
   }
@@ -689,4 +785,9 @@ export {
   debugWarn,
   debugError,
   noop,
+  spreadToObject,
+  sizeToVec,
+  scaleSize,
+  hasConstructor,
+  preloadImages,
 }
