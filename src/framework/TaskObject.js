@@ -870,7 +870,10 @@ export default class TaskObject {
     }
 
     return this.dataManager.setConnection(variables)
-    .then((connection) => { this.connection = connection })
+    .then((connection) => {
+      this.connection = connection
+      return connection
+    })
     .catch((error) => { debugError(error) })
   }
 

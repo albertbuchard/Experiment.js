@@ -56,21 +56,30 @@
     $userId = null;
     $credentials = $data['credentials'];
     if ($data['query'] === $_QUERY_LOGIN) {
-      $logged = login($bdd, $data['credentials']);
-      if (is_array($logged)) {
-        $result['credentials'] = $logged;
-        $result['newUser'] = false;
-      } elseif ($_SHOULD_CREATE_USERS_ON_LOGIN) {
-        // login failure - try to create new user
-        $logged = signup($bdd, $data['credentials']);
-        if (is_array($logged)) {
-          $result['credentials'] = $logged;
-          $result['newUser'] = true;
-        } else {
-          throw new Exception("Invalid credentials", 1);
+      if (!is_array($credentials)) {
+        throw new Exception("Invalid credentials - A", 1);
+      } elseif ((array_key_exists("logKey", $credentials))&&(array_key_exists("userId", $credentials))) {
+        // try to login with a logKey -- only check if accredited - return credential if so
+        if (is_accredited($bdd, ['userId' => $credentials['userId'], 'logKey' => $credentials['logKey']])) {
+          $result['credentials'] = ['userId' => $credentials['userId'], 'logKey' => $credentials['logKey']];
+          $result['newUser'] = false;
         }
       } else {
-        throw new Exception("Invalid credentials", 1);
+        $logged = login($bdd, $data['credentials']);
+        if (is_array($logged)) {
+          $result['credentials'] = $logged;
+          $result['newUser'] = false;
+        } elseif ($_SHOULD_CREATE_USERS_ON_LOGIN) {
+          // login failure - try to create new user
+          $logged = signup($bdd, $data['credentials']);
+          if (is_array($logged)) {
+            $result['credentials'] = $logged;
+            $result['newUser'] = true;
+          }
+        }
+      }
+      if (!array_key_exists('credentials', $result)) {
+        throw new Exception("Invalid credentials - B", 1);
       }
     } elseif ($data['query'] === $_QUERY_SIGNUP)  {
       // create new user
