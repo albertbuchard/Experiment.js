@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import $ from 'jquery'
-import Promise from 'bluebird'
+import Promise from 'bluebird' // eslint-disable-line
+import { SmartForm } from 'experiment-boxes'
 import {
   Array,
   String,
@@ -121,6 +122,9 @@ export default class DataManager {
     this.connections = []
 
     this.addRate = 2000
+
+    this.loginDeferred = null
+    this.isCurrentlySigningIn = null
 
     /** Determines wether the current environment is Node or the Browser */
     this.isNode = false
@@ -483,32 +487,100 @@ export default class DataManager {
   }
 
   /* ======= Credentials ======= */
-  login(connection = mandatory(), variables = null, deferred = new Deferred()) {
+  signInForm(formGenerator = null) {
+    const deferred = new Deferred()
+    let form = null
+    if (hasConstructor(Function, formGenerator)) {
+      form = formGenerator()
+      if (!hasConstructor(SmartForm, form)) {
+        form = null
+        debugError('DataManager.signInForm: sign in form function does not return a SmartForm')
+      }
+    }
+
+    if (form === null) {
+      // generate a basic form with userId and password
+      const fields = {
+        userId: {
+          type: 'input', // field type: input, select, textaera, slider, radio
+          constraints: 'alpha; length:10,300', // list of constraints that will be automatically verified: mandatory; alpha; numeric; length:XX; contains:a,b,@,.;
+          authorizedValues: null, // athorized values
+          parent: null,
+          title: 'Enter your UserId',
+        },
+        password: {
+          type: 'input', // field type: input, select, textaera, slider, radio
+          constraints: 'alpha; length:6,300', // list of constraints that will be automatically verified: mandatory; alpha; numeric; length:XX; contains:a,b,@,.;
+          authorizedValues: null, // athorized values
+          parent: null,
+          title: 'Enter your password:',
+        },
+      }
+      const options = { fields, title: 'Login Form', format: 'topCentralSmall' }
+      form = new SmartForm(options)
+    }
+
+    form.buttonText = 'OK'
+    form.promise.then((fields) => {
+      const values = {}
+      for (const field in fields) {
+        if ((fields.hasOwnProperty(field) && fields[field].value)) {
+          values[field] = fields[field].value
+        }
+      }
+      deferred.resolve(values)
+    })
+
+    return deferred
+  }
+
+  login(connection = mandatory(), variables = null, deferred = null) {
+    if ((hasConstructor(Deferred, this.loginDeferred) && this.loginDeferred.pending)) {
+      if (deferred !== this.loginDeferred) {
+        return this.loginDeferred.promise
+      }
+      deferred = this.loginDeferred
+    } else {
+      if (!hasConstructor(Deferred, deferred)) {
+        deferred = new Deferred()
+      }
+      this.loginDeferred = deferred
+    }
+
     if (deferred.status > this.MAX_NUMBER_OF_RETRY) {
       deferred.reject('DataManager.login: login failure - reach max retry.')
-    } else {
-      deferred.status += 1
+    }
+    deferred.status += 1
+
+    if (hasConstructor(Deferred, this.isCurrentlySigningIn) && this.isCurrentlySigningIn.pending) {
+      return this.isCurrentlySigningIn.promise
+    }
 
       // an interface needs to have a login endpoint to be used in this function
       // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
-      if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
-        if (variables === null) {
-          return this.login(connection, { userId: 'John', password: 'az4444' }, deferred)// call a smartForm modal with userId and password
-        }
-          // perform ajax with the variables as credentials
-        const data = {
-          interface: connection.type,
-          credentials: variables,
-          query: connection.login,
-        }
+    if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
+      if (variables === null) {
+        const formDeferred = this.signInForm(connection.signInForm)
+        this.isCurrentlySigningIn = formDeferred
+        return formDeferred.promise.then((credentials) => {
+          deferred.status = 0
+          return this.login(connection, credentials, deferred)// call a smartForm modal with userId and password
+        })
+      }
+        // perform ajax with the variables as credentials
+      const data = {
+        interface: connection.type,
+        credentials: variables,
+        query: connection.login,
+      }
 
           // send the data through ajax in json format
-        $.ajax({
-          url: connection.endpoint,
-          type: 'POST',
-          data: JSON.stringify(data),
-          contentType: 'application/json',
-        })
+      $.ajax({
+        url: connection.endpoint,
+        type: 'POST',
+        data: JSON.stringify(data),
+        contentType: 'application/json',
+      })
           .done(function done(data, status) {
             // if success set credentials inside the connection
             connection.credentials = data.credentials
@@ -525,7 +597,8 @@ export default class DataManager {
             debugError(`DataManager.push: error during login with message ${message}`)
             this.login(connection, null, deferred)
           }.bind(this, connection))
-      }
+    } else {
+      deferred.reject(`DataManager.login: no valid login enpoint for the connection ${connection.name}`)
     }
 
 
@@ -686,65 +759,70 @@ export default class DataManager {
       returned = [data, numRows]
     } catch (e) {
       debugError(e)
-    } finally {
-      return returned
     }
+    return returned
   }
 
   push() {
-    this.waitForPush = 0
-    for (let i = 0; i < this.connections.length; i++) {
-      const connection = this.connections[i]
-      if (connection.type === this.INTERFACE_REST) {
-        for (const table of this.toPush) {
-          // get last index pushed to the server
-          // get the new data from that index
-          if ((this.useLocalStorageCredentials) && (typeof this.local(connection.name) !== 'undefined') && (this.local(connection.name).hasOwnProperty('credentials'))) {
-            connection.credentials = this.local(connection.name).credentials
-          }
-
-          const [rows, lastIndex] = this.getStagedData(table)
-          const data = {
-            interface: connection.type,
-            credentials: connection.credentials,
-            query: connection.add,
-            variables: {
-              table,
-              rows,
-            },
-          }
-
-          // send the data through ajax in json format
-          $.ajax({
-            url: connection.endpoint,
-            type: 'POST',
-            data: JSON.stringify(data),
-            contentType: 'application/json',
-          })
-          .done(function (table, lastIndex, data, status) {
-            // once the ajax call is done, check status of http
-            // if 200 this.waitForPush = false and update the last updated index
-            // bind a context with the name of the table
-            this.tablesLastIndex[table] = lastIndex
-            this.toPush.delete(table)
-            debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
-          }.bind(this, table, lastIndex))
-          .fail(function (connection, table, xhr) {
-            const json = xhr.responseJSON || { message: '', shouldLog: false }
-            if (json.shouldLog) {
-              debugError('DataManager.push: user is not logged in -- will call the log function.')
-              // will pop a form to log
-              this.login(connection).then(() => { this.prepareToPush(table) })
-            } else {
-              debugError(`DataManager.push: could not push ${table} -- will retry`, json.message)
-              this.prepareToPush(table)
+    if ((hasConstructor(Deferred, this.loginDeferred) && this.loginDeferred.pending)) {
+      delay(this.addRate).then(() => {
+        this.push()
+      })
+    } else {
+      this.waitForPush = 0
+      for (let i = 0; i < this.connections.length; i++) {
+        const connection = this.connections[i]
+        if (connection.type === this.INTERFACE_REST) {
+          for (const table of this.toPush) {
+            // get last index pushed to the server
+            // get the new data from that index
+            if ((this.useLocalStorageCredentials) && (typeof this.local(connection.name) !== 'undefined') && (this.local(connection.name).hasOwnProperty('credentials'))) {
+              connection.credentials = this.local(connection.name).credentials
             }
-          }.bind(this, connection, table))
-        }
-      }
 
-      if (connection.type === this.INTERFACE_GRAPHQL) {
-        //
+            const [rows, lastIndex] = this.getStagedData(table)
+            const data = {
+              interface: connection.type,
+              credentials: connection.credentials,
+              query: connection.add,
+              variables: {
+                table,
+                rows,
+              },
+            }
+
+            // send the data through ajax in json format
+            $.ajax({
+              url: connection.endpoint,
+              type: 'POST',
+              data: JSON.stringify(data),
+              contentType: 'application/json',
+            })
+            .done(function (table, lastIndex, data, status) {
+              // once the ajax call is done, check status of http
+              // if 200 this.waitForPush = false and update the last updated index
+              // bind a context with the name of the table
+              this.tablesLastIndex[table] = lastIndex
+              this.toPush.delete(table)
+              debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
+            }.bind(this, table, lastIndex))
+            .fail(function (connection, table, xhr) {
+              const json = xhr.responseJSON || { message: '', shouldLog: false }
+              if (json.shouldLog) {
+                debugError('DataManager.push: user is not logged in -- will call the log function.')
+                // will pop a form to log
+                this.login(connection).then(() => { this.prepareToPush(table) })
+              } else {
+                debugError(`DataManager.push: could not push ${table} -- will retry`, json.message)
+                this.prepareToPush(table)
+              }
+            }.bind(this, connection, table))
+          }
+        }
+
+        if (connection.type === this.INTERFACE_GRAPHQL) {
+          //
+        }
       }
     }
   }

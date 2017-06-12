@@ -6,7 +6,6 @@
   /*
   require_once 'vendor/autoload.php';
 
-  use GraphQL\GraphQL;
   use \GraphQL\Schema;
   use \GraphQL\Type\Definition\Config;
   use \GraphQL\Error\FormattedError;
@@ -59,25 +58,6 @@
       $logged = login($bdd, $data['credentials']);
       if (is_array($logged)) {
         $result['credentials'] = $logged;
-        $result['newUser'] = false;
-      } elseif ($_SHOULD_CREATE_USERS_ON_LOGIN) {
-        // login failure - try to create new user
-        $logged = signup($bdd, $data['credentials']);
-        if (is_array($logged)) {
-          $result['credentials'] = $logged;
-          $result['newUser'] = true;
-        } else {
-          throw new Exception("Invalid credentials", 1);
-        }
-      } else {
-        throw new Exception("Invalid credentials", 1);
-      }
-    } elseif ($data['query'] === $_QUERY_SIGNUP)  {
-      // create new user
-      $logged = signup($bdd, $data['credentials']);
-      if (is_array($logged)) {
-        $result['credentials'] = $logged;
-        $result['newUser'] = true;
       }
     } else {
       if (isset($credentials['userId']) && isset($credentials['logKey'])) {
@@ -146,6 +126,7 @@
     }
 
     $httpStatus = 200;
+
   } catch (Exception $e) {
     $result['message'] = $e.message;
     $httpStatus = 500;

@@ -1810,9 +1810,9 @@ experiment-babylon-js@^2.5.12:
   version "2.5.12"
   resolved "https://registry.yarnpkg.com/experiment-babylon-js/-/experiment-babylon-js-2.5.12.tgz#7be517f5ea9c1626727f187dd0a923ab8b196b73"
 
-experiment-boxes@^0.1.28:
-  version "0.1.29"
-  resolved "https://registry.yarnpkg.com/experiment-boxes/-/experiment-boxes-0.1.29.tgz#f3b26d544a8fa62bd32f0e9e3922258c8e62d47d"
+experiment-boxes@^0.1.37:
+  version "0.1.37"
+  resolved "https://registry.yarnpkg.com/experiment-boxes/-/experiment-boxes-0.1.37.tgz#8b5bbe503fd81f5b938b3f35686bbca06ba74bd7"
   dependencies:
     chartjs "^0.3.24"
     experiment-mathjs "^3.10.1"

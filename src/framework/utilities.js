@@ -176,6 +176,7 @@ function Deferred() {
   this.reject = null
   this.resolved = false
   this.rejected = false
+  this.pending = true
   this.status = 0
   /* A newly created Pomise object.
    * Initially in pending state.
@@ -183,10 +184,12 @@ function Deferred() {
   this.promise = new Promise((resolve, reject) => {
     this.resolve = (data) => {
       this.resolved = true
+      this.pending = false
       resolve(data)
     }
     this.reject = (e) => {
       this.rejected = true
+      this.pending = false
       if (e.constructor === String) {
         e = new Error(e)
       }

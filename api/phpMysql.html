@@ -45,12 +45,13 @@
 
     taskObject.startTask().then((message) => {
       console.log(message)
-      taskObject.setConnection({ endpoint: './php/mysql/index.php', credentials: { userId: 'John', password: 'az4444' } })
+      // taskObject.dataManager.useLocalStorageCredentials = false
+      taskObject.setConnection({ endpoint: './php/mysql/index.php'}) //, credentials: { userId: 'John', password: 'JohnsPassword' } })
     })
 
     window.taskObject = taskObject
   })
-  </script> 
+  </script>
 </head>
 <body>
   <!-- Create a canvas for the task -->
