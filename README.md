@@ -184,10 +184,10 @@ Optionals: experiment-api
 - Build tests and set up continuous integration to facilitate open-source development
 - Write more helper function for 3D development
 
-# Author
-Made with ❤️ by Albert Buchard
+## Authors
 
-From the **Bavelier Lab** in Geneva
+- Albert Buchard, **Bavelier Lab** in Geneva
+- ❤️ Your name here ❤️ ...
 
 # License
 Apache-2
