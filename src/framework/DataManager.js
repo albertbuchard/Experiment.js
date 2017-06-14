@@ -584,6 +584,7 @@ export default class DataManager {
           .done(function done(data, status) {
             // if success set credentials inside the connection
             connection.credentials = data.credentials
+            connection.loggedIn = true
             if (this.useLocalStorageCredentials) {
               this.local(connection.name, { credentials: data.credentials })
             }
@@ -595,6 +596,7 @@ export default class DataManager {
             const json = xhr.responseJSON
             const message = json.message || ''
             debugError(`DataManager.push: error during login with message ${message}`)
+            connection.loggedIn = false
             this.login(connection, null, deferred)
           }.bind(this, connection))
     } else {
@@ -835,6 +837,7 @@ export default class DataManager {
         name: null,
         endpoint: null,
         credentials: null,
+        loggedIn: false,
         add: this.QUERY_ADD,
         checkpoint: this.QUERY_CHECKPOINT,
         login: this.QUERY_LOGIN,
@@ -844,6 +847,10 @@ export default class DataManager {
       const connection = _.extend(defaultVariables, variables)
       if (connection.endpoint !== null) {
         connection.name = connection.name || connection.type
+
+        if ((connection.credentials === null) && (this.useLocalStorageCredentials && (typeof this.local(connection.name) !== 'undefined') && (this.local(connection.name).hasOwnProperty('credentials')))) {
+          connection.credentials = this.local(connection.name).credentials
+        }
 
         if (connection.credentials !== null) {
           this.login(connection, connection.credentials)

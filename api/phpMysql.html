@@ -43,13 +43,64 @@
     const taskObject = new TaskObject(document.getElementsByClassName('task-canvas'))
 
 
-    taskObject.startTask().then((message) => {
-      console.log(message)
-      // taskObject.dataManager.useLocalStorageCredentials = false
-      taskObject.setConnection({ endpoint: './php/mysql/index.php'}) //, credentials: { userId: 'John', password: 'JohnsPassword' } })
-    })
+    // taskObject.startTask().then((message) => {
+    //   console.log(message)
+    //   // taskObject.dataManager.useLocalStorageCredentials = false
+    //   //taskObject.setConnection({ endpoint: './php/mysql/index.php'}) //, credentials: { userId: 'John', password: 'JohnsPassword' } })
+    // })
 
     window.taskObject = taskObject
+      const tempMaxNumberOfRetry = taskObject.dataManager.MAX_NUMBER_OF_RETRY
+      const endpoint = './php/mysql/index.php'
+
+      const loggedInDeferred = new Deferred()
+
+      /**
+       * This function in a form generator that is called automatically by the DataManager when the user needs to login
+       * @method loginForm
+       * @return {[type]}  [description]
+       */
+      function loginForm () {
+        var fields = {
+           userId: {
+             type: 'input',
+             constraints: 'alpha; length:10,300', // list of constraints that will be automatically verified: mandatory; alpha; numeric; length:XX; contains:a,b,@,.;
+             authorizedValues: null, // athorized values
+             parent: null,
+             title: 'Enter your login:'
+           },
+           password: {
+             type: 'password', //field type: input, select, textaera, slider, radio, password
+             constraints: 'length:6,300; score: 50', // list of constraints that will be automatically verified: mandatory; alpha; numeric; length:XX; contains:a,b,@,.;
+             authorizedValues: null, // athorized values
+             parent: null,
+             title: 'Enter your password, if you are new here you are free to pick one !' // you can control auto-create account in the php api config
+           },
+         }
+        var options = {fields, title: 'Login Form', format: 'topCentralSmall', callback: function (fields) { console.log({endpoint, credentials: {userId: fields.userId.value, password: fields.password.value}}) }}
+        const form = new SmartForm(options)
+        form.buttonText = 'OK'
+        return form
+      }
+
+      //  If you do not want to store the credentials for the connections localy set this variable to false (the password is not stored in any case, only a logging key)
+      taskObject.dataManager.useLocalStorageCredentials = false
+      taskObject.setConnection({ endpoint: './php/mysql/index.php', signInForm: loginForm}) // credentials: { userId: 'John', password: 'wrong' } })
+      .then(function (connection) {
+        if (connection.loggedIn) {
+          return loggedInDeferred.resolve()
+        }
+        return taskObject.dataManager.login(connection, null, loggedInDeferred) // forces a login
+      })
+      .then(function () {
+        // reset the retry limit to its original value
+        taskObject.dataManager.MAX_NUMBER_OF_RETRY = tempMaxNumberOfRetry
+
+        // start drawing the scene
+        return taskObject.startTask()
+      }).then(function (message) {
+        console.log(message)
+      })
   })
   </script>
 </head>
