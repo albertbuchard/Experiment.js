@@ -8,7 +8,7 @@ An open-source, cross-platform, and headache-free development framework that mak
 - Event based
 - Able to interact with user at millisecond precision
 - Able to record any input with millisecond accuracy
-- Connect easily to any backend / sockets / parallel ports / disk
+- Connect to any backend / sockets / parallel ports / disk
 - Could integrate current open platforms such as The Experiment Factory
 - Has a UI toolbox with all the necessary for experiment development  
 - Any scientist with basic coding skills should be able to learn and develop apps in the framework
@@ -27,8 +27,8 @@ An open-source, cross-platform, and headache-free development framework that mak
     + JS allow to build web GUI to help novice build tasks
     + Boiler plates on Github / Examples / Playground
 - Could integrate current open platforms such as The Experiment Factory
-    + It is the same technology used by the factory (JS/Electron)
-- Connect easily to any backend / sockets / parallel ports / disk
+    + Same technology used by the factory (JS/Electron)
+- Connect to any backend / sockets / parallel ports / disk
     + With Node.js we have low level access without having to rewrite the apps
 - Should run asynchronously and never block the main thread
     + The framework relies heavily on promises and in particular custom promises called Deferred
@@ -174,10 +174,20 @@ Lodash, jQuery, chartjs, bootstrap
 experiment-babylon-js, experiment-boxes, experiment-mathjs
 Optionals: experiment-api
 
+# Roadmap
+
+- Documentation 2D / 3D + link to Babylon.js
+- Website
+- Electron boilerplate with parallel port support
+- Cordova boilerplate
+- GUI interface for easy prototyping and code generation
+- Build tests and set up continuous integration to facilitate open-source development
+- Write more helper function for 3D development
+
 # Author
 Made with ❤️ by Albert Buchard
 
 From the **Bavelier Lab** in Geneva
 
-# Licence
+# License
 Apache-2
