@@ -1,5 +1,4 @@
-# Experiment JS
-
+![Experiment.js logo](./assets/experiment-js.png)
 An open-source, cross-platform, and headache-free development framework that makes the development of modern behavioural experiments easy and fun
 
 # Objectives
