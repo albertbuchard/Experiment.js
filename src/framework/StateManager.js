@@ -13,6 +13,7 @@ import { mandatory,
   spreadToObject, Deferred, delay,
   sizeToVec,
   scaleSize,
+  hasConstructor,
 } from './utilities'
 
 /**
@@ -161,6 +162,10 @@ export default class StateManager {
       if (!(_.has(data, 'belongsTo'))) {
         debuglog(data)
         throw new Error('StateManager: data needs a belongsTo property in order to store it in the dataManager.')
+      }
+
+      if (hasConstructor(String, data.belongsTo)) {
+        data.belongsTo = [data.belongsTo]
       }
 
       data.storedInErrorLog = false
