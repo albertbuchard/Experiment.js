@@ -71,6 +71,9 @@ export default class StateManager {
       values: {
         timestampThreshold: 10e7,
       },
+      events: {
+        unfrozen: 'eventUnfrozen',
+      },
     }, false)
 
     /*  Hash table of state objects */
@@ -620,6 +623,7 @@ export default class StateManager {
     if (this.frozenState !== stateKey) {
       debugError('StateManager.stateWasUnfreezed: stateKey does not correspond to the frozenState')
     } else {
+      this.newEvent(this.R.get.events_unfrozen)
       this.frozenState = null
     }
   }
