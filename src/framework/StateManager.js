@@ -189,6 +189,7 @@ export default class StateManager {
     if (data.storedInErrorLog === false) {
       data.storedInErrorLog = true
       this.errorLog = this.errorLog.concat(data)
+      // TODO check datamanager has error log, if yes store it, if not create it and store it
       debuglog('StateManager: data stored in the errorLog.')
     } else {
       debugWarn('StateManager: data already stored in errorLog. Did not store it again.')
