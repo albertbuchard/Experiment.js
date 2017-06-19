@@ -103,13 +103,15 @@ export default class StateManager {
   /* ======== Class methods ======== */
   update() {
     /* --- Checks if some _timeTriggerEvents should be added to the heap --- */
+    const toSplice = []
     for (let i = 0; i < this._timeTriggerEvents.length; i++) {
       if (this.timeInMs >= this._timeTriggerEvents[i].happenedAt) {
         this._timeTriggerEvents[i].happenedAt = this.timeInMs // correct for fps delay
         this.addEvent(this._timeTriggerEvents[i])
-        this._timeTriggerEvents.splice(i)
+        toSplice.push(i)
       }
     }
+    this._timeTriggerEvents.multisplice(...toSplice)
 
     /* --- Update the state --- */
     this.currentState.update()
