@@ -15,7 +15,7 @@ export default class EventData {
     this.flag = flag
 
     /* --- Set data and happenedAt --- */
-    this.BASE_DATA_FIELDS = {
+    const BASE_DATA_FIELDS = {
       belongsTo: ['globalLog'], // could be an array of strings
       handledAt: null,
       storedAt: null,
@@ -26,13 +26,13 @@ export default class EventData {
       // Treat it as the data
       if (data === null) {
         this.happenedAt = EventData.timeInMs
-        this.data = _.extend(this.BASE_DATA_FIELDS, happenedAt)
+        this.data = _.extend(BASE_DATA_FIELDS, happenedAt)
       } else {
         throw new Error('EventData.constructor: parameters order or type is invalid.')
       }
     } else {
       this.happenedAt = happenedAt
-      this.data = _.extend(this.BASE_DATA_FIELDS, data)
+      this.data = _.extend(BASE_DATA_FIELDS, data)
     }
 
 

@@ -13,6 +13,7 @@ import { mandatory,
   spreadToObject, Deferred, delay,
   sizeToVec,
   scaleSize,
+  hasConstructor,
 } from './utilities'
 
 /**
@@ -69,6 +70,9 @@ export default class StateManager {
       },
       values: {
         timestampThreshold: 10e7,
+      },
+      events: {
+        unfrozen: 'eventUnfrozen',
       },
     }, false)
 
@@ -163,6 +167,10 @@ export default class StateManager {
         throw new Error('StateManager: data needs a belongsTo property in order to store it in the dataManager.')
       }
 
+      if (hasConstructor(String, data.belongsTo)) {
+        data.belongsTo = [data.belongsTo]
+      }
+
       data.storedInErrorLog = false
       for (let i = 0; i < data.belongsTo.length; i++) {
         try {
@@ -181,6 +189,7 @@ export default class StateManager {
     if (data.storedInErrorLog === false) {
       data.storedInErrorLog = true
       this.errorLog = this.errorLog.concat(data)
+      // TODO check datamanager has error log, if yes store it, if not create it and store it
       debuglog('StateManager: data stored in the errorLog.')
     } else {
       debugWarn('StateManager: data already stored in errorLog. Did not store it again.')
@@ -615,6 +624,7 @@ export default class StateManager {
     if (this.frozenState !== stateKey) {
       debugError('StateManager.stateWasUnfreezed: stateKey does not correspond to the frozenState')
     } else {
+      this.newEvent(this.R.get.events_unfrozen)
       this.frozenState = null
     }
   }

@@ -9,7 +9,10 @@ export default class RessourceManager {
    * RessourceManager - class which allows to load text file in different allowed
    * format, convert it to javascript objects accessible by proxy allowing for
    * easy localization and debuging.
-   *
+   * TODO Allow for array as multiline strings
+   * TODO Add layout/html loading to RessourceManager
+   * TODO Add the image preloader
+   * TODO make en/fr/ge etc. keywords able to classify not only strings like so R.get.wolfFmriFirstAppear_(en_)title
    * @constructor
    * @param {...string} filepaths iterable of strings of file paths to load
    *

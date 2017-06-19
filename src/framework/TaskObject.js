@@ -541,6 +541,7 @@ export default class TaskObject {
           handledAt: null,
           storedAt: null,
           keyCode: evt.keyCode,
+          key: evt.key,
         },
       )
 
