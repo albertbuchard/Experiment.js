@@ -665,7 +665,7 @@ export default class DataManager {
             debugError('DataManager.push: user is not logged in -- will call the log function.')
             this.login(connection).then(() => { this.query(query, variables, connection, deferred) })
           } else {
-            debugError('DataManager.push: could not perform query -- will retry', json.stringify(query), json.message)
+            debugError('DataManager.push: could not perform query -- will retry', JSON.stringify(query), json.message)
             this.query(query, variables, connection, deferred)
           }
         })

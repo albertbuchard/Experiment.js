@@ -938,6 +938,7 @@ export default class TaskObject {
       scene,
       stateManager,
       state,
+      connection: this.connection,
       R: this.R,
     }
 
