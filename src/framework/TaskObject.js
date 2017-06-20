@@ -646,7 +646,7 @@ export default class TaskObject {
       }
 
       this.addEventToCurrentScene(new EventData(event, this.timeInMs))
-    }
+    }.bind(this)
 
     let visibilityChange
     if (typeof document.hidden !== 'undefined') {
