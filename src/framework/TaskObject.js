@@ -693,18 +693,22 @@ export default class TaskObject {
 
   // TODO create a familly of hooks that call functions forthe curent scene, like this one
   addEventToCurrentScene(eventData = mandatory()) {
-    // checks that there is a current scene
-    if (typeof this.currentSceneObject !== 'undefined') {
-      // checks that the scene has a stateManager
-      if (typeof this.currentSceneObject.stateManager !== 'undefined') {
-        // adds the event
-        this.currentSceneObject.stateManager.addEvent(eventData)
+    try {
+      // checks that there is a current scene
+      if (typeof this.currentSceneObject !== 'undefined') {
+        // checks that the scene has a stateManager
+        if (typeof this.currentSceneObject.stateManager !== 'undefined') {
+          // adds the event
+          this.currentSceneObject.stateManager.addEvent(eventData)
+        } else {
+          throw new Error('TaskObject.addEventToCurrentScene: No stateManager in currentSceneObject')
+        }
       } else {
-        throw new Error('TaskObject.addEventToCurrentScene: No stateManager in currentSceneObject')
+        // else return an error message
+        throw new Error('TaskObject.addEventToCurrentScene: No current scene object')
       }
-    } else {
-      // else return an error message
-      throw new Error('TaskObject.addEventToCurrentScene: No current scene object')
+    } catch (e) {
+      debugError(e)
     }
   }
 
