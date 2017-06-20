@@ -517,6 +517,8 @@ export default class TaskObject {
         keydown: 'key_down',
         keyup: 'key_up',
         resize: 'resize',
+        windowFocus: 'windowFocus',
+        windowBlur: 'windowBlur',
         pause: 'pause',
         wasHandled: 'was_handled',
         beingHandled: 'being_handled',
@@ -635,6 +637,31 @@ export default class TaskObject {
         }
       }
     })
+
+    /* --- Focus event --- */
+    const checkFocus = function () {
+      let event = R.get.events_windowBlur
+      if (document.hasFocus()) {
+        event = R.get.events_windowFocus
+      }
+
+      this.addEventToCurrentScene(new EventData(event, this.timeInMs))
+    }
+
+    let visibilityChange
+    if (typeof document.hidden !== 'undefined') {
+      visibilityChange = 'visibilitychange'
+    } else if (typeof document.mozHidden !== 'undefined') {
+      visibilityChange = 'mozvisibilitychange'
+    } else if (typeof document.msHidden !== 'undefined') {
+      visibilityChange = 'msvisibilitychange'
+    } else if (typeof document.webkitHidden !== 'undefined') {
+      visibilityChange = 'webkitvisibilitychange'
+    }
+
+    document.addEventListener(visibilityChange, checkFocus)
+    window.addEventListener('focus', checkFocus)
+    window.addEventListener('blur', checkFocus)
   }
 
   keyfunction(e) {
