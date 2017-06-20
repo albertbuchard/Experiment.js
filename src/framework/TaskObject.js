@@ -111,7 +111,7 @@ export default class TaskObject {
     this.dataManager.addTable('statusFlags', statusFlagsFields)
 
     /* --- Add the checkpoint table --- */
-    const checkpointFields = ['code', 'happenedAt']
+    const checkpointFields = ['code', 'happenedAt', 'message']
     this.dataManager.addTable('checkpoints', checkpointFields)
 
     /* --- Assets --- */
@@ -905,7 +905,7 @@ export default class TaskObject {
     .catch((error) => { debugError(error) })
   }
 
-  setCheckpoint(code = mandatory()) {
+  setCheckpoint(code = mandatory(), message = '') {
     // store the whole object in the db ? ... probably not or.. ? it might be a great idea
     // we need to save the current state name, the non object globals,
     // and the events in store, we also have to store the state globals
@@ -915,7 +915,7 @@ export default class TaskObject {
       throw new Error('StateManager.setCheckpoint: no dataManager')
     }
 
-    this.dataManager.addRows('checkpoints', { code, happenedAt: this.timeInMs })
+    this.dataManager.addRows('checkpoints', { code, happenedAt: this.timeInMs, message })
   }
 
   getCheckpoint() {
