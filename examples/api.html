@@ -64,7 +64,7 @@
 
       updateTooltip()
       //setTimeout(deferred.resolve, 5000)
-      tooltip.then(() => { console.log("This is the end of the tooltip baby.")})
+      tooltip.promise.then(() => { console.log("This is the end of the tooltip baby.")})
     })
 
     window.taskObject = taskObject
