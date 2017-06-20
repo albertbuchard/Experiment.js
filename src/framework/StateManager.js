@@ -426,7 +426,7 @@ export default class StateManager {
       }
     })
 
-    return tooltip.promise
+    return tooltip
   }
 
   hideTooltip(...tooltips) {
