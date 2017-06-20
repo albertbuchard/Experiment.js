@@ -763,7 +763,7 @@ export default class StateManager {
 
     debuglog('StateManager.stateHasFinishedHandlingEvent: event was handled.')
 
-    if (this.dataManager.constructor === DataManager) {
+    if ((this.dataManager.constructor === DataManager) && (event.toStore)) {
       this.storeEvent(event)
     } else {
       debugWarn('StateManager.stateHasFinishedHandlingEvent: dataManager is not set, not storing event.')

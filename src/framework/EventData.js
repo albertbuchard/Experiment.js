@@ -35,10 +35,23 @@ export default class EventData {
       this.data = _.extend(BASE_DATA_FIELDS, data)
     }
 
-
+    /**
+     * Flag will inform the state if the event was meant for it. Default to any,
+     * meaning all states can handle the event.
+     * @type {String}
+     */
     this.forState = 'any'
     if (this.data.hasOwnProperty('forState')) {
       this.forState = this.data.forState
+    }
+
+    /**
+     * Flag will inform the stateManager should store it in the dataManager
+     * @type {Boolean}
+     */
+    this.toStore = true
+    if (this.data.hasOwnProperty('toStore')) {
+      this.toStore = this.data.toStore
     }
 
 
