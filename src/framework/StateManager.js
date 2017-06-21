@@ -383,7 +383,7 @@ export default class StateManager {
 
       const tooltipBox = new BABYLON.Rectangle2D({
         parent: guiCanvas,
-        id: 'tooltipBox',
+        id: `tooltipBox${tooltips.length}`,
         // position: position.subtract(size.scale(0.5).add(spaced)),
         width: sizeDefault.width,
         height: sizeDefault.height,
@@ -394,7 +394,7 @@ export default class StateManager {
 
       const tooltipText = new BABYLON.Text2D(text, {
         parent: tooltipBox,
-        id: 'tooltipText',
+        id: `tooltipText${tooltips.length}`,
         marginAlignment: 'h: center, v:center',
         defaultFontColor: fontColor,
         fontSuperSample,
