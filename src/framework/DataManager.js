@@ -799,7 +799,7 @@ export default class DataManager {
           let pushed = 0
           const pushDeferred = this.pushDeferred
           const checkIfPushed = function () {
-            if (pushed >= toPushSize - 1) {
+            if (pushed >= toPushSize) {
               pushDeferred.resolve()
             }
           }
