@@ -919,7 +919,7 @@ export default class TaskObject {
       throw new Error('StateManager.setCheckpoint: no dataManager')
     }
 
-    this.dataManager.addRows('checkpoints', { code, happenedAt: this.timeInMs, message })
+    return this.dataManager.addRows('checkpoints', { code, happenedAt: this.timeInMs, message })
   }
 
   getCheckpoint() {

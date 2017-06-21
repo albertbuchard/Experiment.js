@@ -220,12 +220,12 @@ export default class DataManager {
         const nrows = (rows[firstField].constructor !== Array) ? 1 : rows[firstField].length
         debuglog(`DataManager.addRows: added ${nrows} rows to ${name} data table.`)
 
-        this.prepareToPush(name)
-      } else {
-        throw new Error('DataManager.addRows: Row is of invalid format.')
+        return this.prepareToPush(name)
       }
+      throw new Error('DataManager.addRows: Row is of invalid format.')
     } catch (e) {
       debugError('DataManager.addRows: ', e)
+      return Promise.resolve()
     }
   }
 
@@ -722,7 +722,11 @@ export default class DataManager {
         this.push()
       })
     }
-    // return Promise.resolve()
+    if ((!hasConstructor(Deferred, this.pushDeferred)) || (!this.pushDeferred.pending)) {
+      this.pushDeferred = new Deferred()
+    }
+
+    return this.pushDeferred
   }
 
   getStagedData(table = mandatory(), format = 'dataArray') {
@@ -791,6 +795,14 @@ export default class DataManager {
       for (let i = 0; i < this.connections.length; i++) {
         const connection = this.connections[i]
         if (connection.type === this.INTERFACE_REST) {
+          const toPushSize = this.toPush.length
+          let pushed = 0
+          const pushDeferred = this.pushDeferred
+          const checkIfPushed = function () {
+            if (pushed >= toPushSize - 1) {
+              pushDeferred.resolve()
+            }
+          }
           for (const table of this.toPush) {
             // get last index pushed to the server
             // get the new data from that index
@@ -820,6 +832,8 @@ export default class DataManager {
               // once the ajax call is done, check status of http
               // if 200 this.waitForPush = false and update the last updated index
               // bind a context with the name of the table
+              pushed += 1
+              checkIfPushed()
               this.tablesLastIndex[table] = lastIndex
               this.toPush.delete(table)
               debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
