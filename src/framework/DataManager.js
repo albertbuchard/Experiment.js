@@ -795,7 +795,7 @@ export default class DataManager {
       for (let i = 0; i < this.connections.length; i++) {
         const connection = this.connections[i]
         if (connection.type === this.INTERFACE_REST) {
-          const toPushSize = this.toPush.length
+          const toPushSize = this.toPush.size
           let pushed = 0
           const pushDeferred = this.pushDeferred
           const checkIfPushed = function () {
