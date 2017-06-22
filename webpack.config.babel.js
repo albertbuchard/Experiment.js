@@ -7,7 +7,7 @@ const outputFile = `${libraryName}${PROD ? '.min' : '.max'}.js`
 const plugins = [
   new webpack.optimize.OccurrenceOrderPlugin(),
 ]
-const prodPlugins = plugins.concat(new webpack.optimize.UglifyJsPlugin())
+const prodPlugins = plugins.concat(new webpack.optimize.UglifyJsPlugin({ mangle: false }))
 
 export default {
   entry: './builder.js',

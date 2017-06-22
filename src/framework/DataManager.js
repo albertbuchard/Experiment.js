@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import $ from 'jquery'
 import Promise from 'bluebird' // eslint-disable-line
-import { SmartForm } from 'experiment-boxes'
+import { SmartForm, SmartModal } from 'experiment-boxes'
 import {
   Array,
   String,
@@ -220,12 +220,12 @@ export default class DataManager {
         const nrows = (rows[firstField].constructor !== Array) ? 1 : rows[firstField].length
         debuglog(`DataManager.addRows: added ${nrows} rows to ${name} data table.`)
 
-        this.prepareToPush(name)
-      } else {
-        throw new Error('DataManager.addRows: Row is of invalid format.')
+        return this.prepareToPush(name)
       }
+      throw new Error('DataManager.addRows: Row is of invalid format.')
     } catch (e) {
       debugError('DataManager.addRows: ', e)
+      return Promise.resolve()
     }
   }
 
@@ -487,7 +487,7 @@ export default class DataManager {
   }
 
   /* ======= Credentials ======= */
-  signInForm(formGenerator = null) {
+  signInForm(formGenerator = null, message = null) {
     const deferred = new Deferred()
     let form = null
     if (hasConstructor(Function, formGenerator)) {
@@ -518,6 +518,13 @@ export default class DataManager {
       }
       const options = { fields, title: 'Login Form', format: 'topCentralSmall' }
       form = new SmartForm(options)
+    }
+
+    if (hasConstructor(String, message)) {
+      const html = `<div class="col-sm-10 bindedfield-errordiv" >
+                      <i class="glyphicon glyphicon-remove"></i><span class="bindedfield-error" style="font-size: 15px;">${message}</span>
+                    </div>`
+      form.prepend(html)
     }
 
     form.buttonText = 'OK'
@@ -560,7 +567,8 @@ export default class DataManager {
       // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
     if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
       if (variables === null) {
-        const formDeferred = this.signInForm(connection.signInForm)
+        const errorMessage = connection.lastErrorMessage || null
+        const formDeferred = this.signInForm(connection.signInForm, errorMessage)
         this.isCurrentlySigningIn = formDeferred
         return formDeferred.promise.then((credentials) => {
           deferred.status = 0
@@ -593,11 +601,19 @@ export default class DataManager {
           }.bind(this))
           .fail(function (connection, xhr) {
             // if failure call login with no variables to call a smartForm
-            const json = xhr.responseJSON
-            const message = json.message || ''
+            const json = xhr.responseJSON || { message: '', tooMuchTry: false }
+            const message = json.message
             debugError(`DataManager.push: error during login with message ${message}`)
             connection.loggedIn = false
-            this.login(connection, null, deferred)
+            connection.lastErrorMessage = message
+            if (json.tooMuchTry) {
+              const modal = new SmartModal('centralSmall')
+              modal.title = 'Login Failure'
+              modal.content = 'Too many login failure. Wait 5min before trying to log again.'
+              deferred.reject('DataManager.login: Too many login failure. Wait 5min before trying to log again.')
+            } else {
+              this.login(connection, null, deferred)
+            }
           }.bind(this, connection))
     } else {
       deferred.reject(`DataManager.login: no valid login enpoint for the connection ${connection.name}`)
@@ -649,7 +665,7 @@ export default class DataManager {
             debugError('DataManager.push: user is not logged in -- will call the log function.')
             this.login(connection).then(() => { this.query(query, variables, connection, deferred) })
           } else {
-            debugError('DataManager.push: could not perform query -- will retry', json.stringify(query), json.message)
+            debugError('DataManager.push: could not perform query -- will retry', JSON.stringify(query), json.message)
             this.query(query, variables, connection, deferred)
           }
         })
@@ -706,7 +722,11 @@ export default class DataManager {
         this.push()
       })
     }
-    // return Promise.resolve()
+    if ((!hasConstructor(Deferred, this.pushDeferred)) || (!this.pushDeferred.pending)) {
+      this.pushDeferred = new Deferred()
+    }
+
+    return this.pushDeferred
   }
 
   getStagedData(table = mandatory(), format = 'dataArray') {
@@ -775,6 +795,14 @@ export default class DataManager {
       for (let i = 0; i < this.connections.length; i++) {
         const connection = this.connections[i]
         if (connection.type === this.INTERFACE_REST) {
+          const toPushSize = this.toPush.size
+          let pushed = 0
+          const pushDeferred = this.pushDeferred
+          const checkIfPushed = function () {
+            if (pushed >= toPushSize) {
+              pushDeferred.resolve()
+            }
+          }
           for (const table of this.toPush) {
             // get last index pushed to the server
             // get the new data from that index
@@ -804,6 +832,8 @@ export default class DataManager {
               // once the ajax call is done, check status of http
               // if 200 this.waitForPush = false and update the last updated index
               // bind a context with the name of the table
+              pushed += 1
+              checkIfPushed()
               this.tablesLastIndex[table] = lastIndex
               this.toPush.delete(table)
               debuglog(`DataManager.push: successful ajax call with status ${status}`, data)

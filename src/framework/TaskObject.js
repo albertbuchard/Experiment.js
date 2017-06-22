@@ -111,7 +111,7 @@ export default class TaskObject {
     this.dataManager.addTable('statusFlags', statusFlagsFields)
 
     /* --- Add the checkpoint table --- */
-    const checkpointFields = ['code', 'happenedAt']
+    const checkpointFields = ['code', 'happenedAt', 'message']
     this.dataManager.addTable('checkpoints', checkpointFields)
 
     /* --- Assets --- */
@@ -517,6 +517,8 @@ export default class TaskObject {
         keydown: 'key_down',
         keyup: 'key_up',
         resize: 'resize',
+        windowFocus: 'windowFocus',
+        windowBlur: 'windowBlur',
         pause: 'pause',
         wasHandled: 'was_handled',
         beingHandled: 'being_handled',
@@ -635,6 +637,31 @@ export default class TaskObject {
         }
       }
     })
+
+    /* --- Focus event --- */
+    const checkFocus = function () {
+      let event = R.get.events_windowBlur
+      if (document.hasFocus()) {
+        event = R.get.events_windowFocus
+      }
+
+      this.addEventToCurrentScene(new EventData(event, this.timeInMs))
+    }.bind(this)
+
+    let visibilityChange
+    if (typeof document.hidden !== 'undefined') {
+      visibilityChange = 'visibilitychange'
+    } else if (typeof document.mozHidden !== 'undefined') {
+      visibilityChange = 'mozvisibilitychange'
+    } else if (typeof document.msHidden !== 'undefined') {
+      visibilityChange = 'msvisibilitychange'
+    } else if (typeof document.webkitHidden !== 'undefined') {
+      visibilityChange = 'webkitvisibilitychange'
+    }
+
+    document.addEventListener(visibilityChange, checkFocus)
+    window.addEventListener('focus', checkFocus)
+    window.addEventListener('blur', checkFocus)
   }
 
   keyfunction(e) {
@@ -666,18 +693,22 @@ export default class TaskObject {
 
   // TODO create a familly of hooks that call functions forthe curent scene, like this one
   addEventToCurrentScene(eventData = mandatory()) {
-    // checks that there is a current scene
-    if (typeof this.currentSceneObject !== 'undefined') {
-      // checks that the scene has a stateManager
-      if (typeof this.currentSceneObject.stateManager !== 'undefined') {
-        // adds the event
-        this.currentSceneObject.stateManager.addEvent(eventData)
+    try {
+      // checks that there is a current scene
+      if (typeof this.currentSceneObject !== 'undefined') {
+        // checks that the scene has a stateManager
+        if (typeof this.currentSceneObject.stateManager !== 'undefined') {
+          // adds the event
+          this.currentSceneObject.stateManager.addEvent(eventData)
+        } else {
+          throw new Error('TaskObject.addEventToCurrentScene: No stateManager in currentSceneObject')
+        }
       } else {
-        throw new Error('TaskObject.addEventToCurrentScene: No stateManager in currentSceneObject')
+        // else return an error message
+        throw new Error('TaskObject.addEventToCurrentScene: No current scene object')
       }
-    } else {
-      // else return an error message
-      throw new Error('TaskObject.addEventToCurrentScene: No current scene object')
+    } catch (e) {
+      debugError(e)
     }
   }
 
@@ -878,7 +909,7 @@ export default class TaskObject {
     .catch((error) => { debugError(error) })
   }
 
-  setCheckpoint(code = mandatory()) {
+  setCheckpoint(code = mandatory(), message = '') {
     // store the whole object in the db ? ... probably not or.. ? it might be a great idea
     // we need to save the current state name, the non object globals,
     // and the events in store, we also have to store the state globals
@@ -888,7 +919,7 @@ export default class TaskObject {
       throw new Error('StateManager.setCheckpoint: no dataManager')
     }
 
-    this.dataManager.addRows('checkpoints', { code, happenedAt: this.timeInMs })
+    return this.dataManager.addRows('checkpoints', { code, happenedAt: this.timeInMs, message })
   }
 
   getCheckpoint() {
@@ -911,6 +942,7 @@ export default class TaskObject {
       scene,
       stateManager,
       state,
+      connection: this.connection,
       R: this.R,
     }
 

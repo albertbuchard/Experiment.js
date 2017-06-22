@@ -103,13 +103,15 @@ export default class StateManager {
   /* ======== Class methods ======== */
   update() {
     /* --- Checks if some _timeTriggerEvents should be added to the heap --- */
+    const toSplice = []
     for (let i = 0; i < this._timeTriggerEvents.length; i++) {
       if (this.timeInMs >= this._timeTriggerEvents[i].happenedAt) {
         this._timeTriggerEvents[i].happenedAt = this.timeInMs // correct for fps delay
         this.addEvent(this._timeTriggerEvents[i])
-        this._timeTriggerEvents.splice(i)
+        toSplice.push(i)
       }
     }
+    this._timeTriggerEvents.multisplice(...toSplice)
 
     /* --- Update the state --- */
     this.currentState.update()
@@ -381,7 +383,7 @@ export default class StateManager {
 
       const tooltipBox = new BABYLON.Rectangle2D({
         parent: guiCanvas,
-        id: 'tooltipBox',
+        id: `tooltipBox${tooltips.length}`,
         // position: position.subtract(size.scale(0.5).add(spaced)),
         width: sizeDefault.width,
         height: sizeDefault.height,
@@ -392,7 +394,7 @@ export default class StateManager {
 
       const tooltipText = new BABYLON.Text2D(text, {
         parent: tooltipBox,
-        id: 'tooltipText',
+        id: `tooltipText${tooltips.length}`,
         marginAlignment: 'h: center, v:center',
         defaultFontColor: fontColor,
         fontSuperSample,
@@ -424,7 +426,7 @@ export default class StateManager {
       }
     })
 
-    return tooltip.promise
+    return tooltip
   }
 
   hideTooltip(...tooltips) {
@@ -761,7 +763,7 @@ export default class StateManager {
 
     debuglog('StateManager.stateHasFinishedHandlingEvent: event was handled.')
 
-    if (this.dataManager.constructor === DataManager) {
+    if ((this.dataManager.constructor === DataManager) && (event.toStore)) {
       this.storeEvent(event)
     } else {
       debugWarn('StateManager.stateHasFinishedHandlingEvent: dataManager is not set, not storing event.')
