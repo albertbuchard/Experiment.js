@@ -23,7 +23,7 @@ export default class DataManager {
    * @param  {[type]} subjectID [description]
    * @return {[type]}           [description]
    */
-  constructor(parent = mandatory(), subjectID = null) {
+  constructor(parent = null, subjectID = null) {
     /**
      * DataManager parent object.
      * @type {object}
