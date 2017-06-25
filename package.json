@@ -1,6 +1,6 @@
 {
   "name": "experiment-js",
-  "version": "0.5.72",
+  "version": "0.5.73",
   "description": "Javascript framework for 2D and 3D cross-platform experiments.",
   "main": "lib/experiment.max.js",
   "author": "Albert Buchard",
