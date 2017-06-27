@@ -49,6 +49,7 @@
    scaleSize,
    hasConstructor,
    preloadImages,
+   getQueryString,
  } from './src/framework/utilities'
 
 
@@ -101,4 +102,5 @@
   hasConstructor,
   preloadImages,
   Loader,
+  getQueryString,
 }

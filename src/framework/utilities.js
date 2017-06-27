@@ -8,6 +8,8 @@ import _ from 'lodash'
 import math from 'experiment-mathjs'
 import Promise from 'bluebird'
 
+import BABYLON from 'experiment-babylon-js'
+
 import { DEBUG_MODE_ON } from '../config'
 
 Promise.config({
@@ -350,6 +352,29 @@ function scaleSize(size = null, scale = 1) {
   }
 
   return new BABYLON.Size(size.width * floatScale, size.height * floatScale)
+}
+
+function getQueryString() {
+    // This function is anonymous, is executed immediately and
+    // the return value is assigned to QueryString!
+  const queryString = {}
+  const query = window.location.search.substring(1)
+  const vars = query.split('&')
+  for (let i = 0; i < vars.length; i++) {
+    const pair = vars[i].split('=')
+      // If first entry with this name
+    if (typeof queryString[pair[0]] === 'undefined') {
+      queryString[pair[0]] = decodeURIComponent(pair[1])
+        // If second entry with this name
+    } else if (typeof queryString[pair[0]] === 'string') {
+      const arr = [queryString[pair[0]], decodeURIComponent(pair[1])]
+      queryString[pair[0]] = arr
+        // If third or later entry with this name
+    } else {
+      queryString[pair[0]].push(decodeURIComponent(pair[1]))
+    }
+  }
+  return queryString
 }
 
 /* ======= Number functions ======= */
@@ -790,4 +815,5 @@ export {
   scaleSize,
   hasConstructor,
   preloadImages,
+  getQueryString,
 }

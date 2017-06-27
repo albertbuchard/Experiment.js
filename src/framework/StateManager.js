@@ -12,7 +12,6 @@ import { mandatory,
   debuglog, debugWarn, debugError, mustBeDefined, mustHaveConstructor,
   spreadToObject, Deferred, delay,
   sizeToVec,
-  scaleSize,
   hasConstructor,
 } from './utilities'
 
@@ -1001,6 +1000,7 @@ export default class StateManager {
       return (this.states[key])
     }
     debugError('StateManager: Invalid state key.')
+    return undefined
   }
 
   /* ======== Getters and Setters ======== */

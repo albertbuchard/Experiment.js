@@ -867,9 +867,10 @@ export default class TaskObject {
                 this.onResize = [this.onResize]
               }
 
+              const context = this.parentTaskObject.context
               for (const f of this.onResize) {
                 if (f.constructor !== Function) continue
-                f.bind(this.parentTaskObject.context)()
+                f.bind(context)()
               }
             }
           }

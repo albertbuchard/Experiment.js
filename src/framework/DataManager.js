@@ -23,7 +23,7 @@ export default class DataManager {
    * @param  {[type]} subjectID [description]
    * @return {[type]}           [description]
    */
-  constructor(parent = mandatory(), subjectID = null) {
+  constructor(parent = null, subjectID = null) {
     /**
      * DataManager parent object.
      * @type {object}
@@ -125,6 +125,8 @@ export default class DataManager {
 
     this.loginDeferred = null
     this.isCurrentlySigningIn = null
+
+    this.authorize_manual_login = true
 
     /** Determines wether the current environment is Node or the Browser */
     this.isNode = false
@@ -605,14 +607,16 @@ export default class DataManager {
             const message = json.message
             debugError(`DataManager.push: error during login with message ${message}`)
             connection.loggedIn = false
-            connection.lastErrorMessage = message
+            connection.lastErrorMessage = `Login error ${message}`
             if (json.tooMuchTry) {
               const modal = new SmartModal('centralSmall')
               modal.title = 'Login Failure'
               modal.content = 'Too many login failure. Wait 5min before trying to log again.'
-              deferred.reject('DataManager.login: Too many login failure. Wait 5min before trying to log again.')
-            } else {
+              deferred.reject('Too many login failure. Wait 5min before trying to log again.')
+            } else if (this.authorize_manual_login) {
               this.login(connection, null, deferred)
+            } else {
+              deferred.reject(message)
             }
           }.bind(this, connection))
     } else {

@@ -332,6 +332,7 @@ export default class State {
     this._frozenEvents = stateManager.getAllEvents()
     debugWarn(this._frozenEvents)
     stateManager.stateWasFrozen(this.stateKey) // TODO: make sure only one state can be frozen ? or add multiple frozen thingy
+    // TODO make functions onFrozen?
   }
 
   unfreeze() {
