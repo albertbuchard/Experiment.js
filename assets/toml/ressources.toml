@@ -1,0 +1,6 @@
+stringToml = '''This is multiline
+Or am I wrong ?'''
+
+[stringTomlLocalized]
+en = '''Why are you saying such things to me?'''
+fr='''Pourquoi me dis-tu cela?'''

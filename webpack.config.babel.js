@@ -1,5 +1,7 @@
 import webpack from 'webpack'
 
+const path = require('path')
+
 const PROD = JSON.parse(process.env.PROD_ENV || '0')
 
 const libraryName = 'experiment'
@@ -31,6 +33,10 @@ export default {
   devtool: PROD ? false : 'source-map',
   resolve: {
     extensions: ['.js', '.jsx'],
+    alias: {
+      'js-yaml': path.join(__dirname, '/node_modules/js-yaml/dist/js-yaml'),
+      // toml: path.join(__dirname, '/node_modules/toml'),
+    },
   },
   externals: {
     jquery: {

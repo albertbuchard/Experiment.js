@@ -1,7 +1,13 @@
 /** @module RessourceManager */
 import $ from 'jquery'
 import Promise from 'bluebird'
+
 import { mandatory, debugError, Deferred } from './utilities'
+
+//eslint-disable-next-line
+const yaml = require('js-yaml') // TODO try to find another way... this is too heavy
+// const toml = require('toml') // smaller ~100ko unimified
+
 
 /* JS Class for ressource management */
 export default class RessourceManager {
@@ -113,7 +119,7 @@ export default class RessourceManager {
       type: 'GET',
       url: this.files[fileIndex].path,
       crossDomain: true,
-    }).done((data, textStatus, jqXHR) => {
+    }).done((data, textStatus, jqXHR) => { //eslint-disable-line
       thisObject.files[fileIndex].loaded = true
       thisObject.files[fileIndex].raw = data
 
@@ -162,6 +168,12 @@ export default class RessourceManager {
             parser.async = false
             parser = parser.loadXML
           }
+          break
+        // case 'toml':
+        //   parser = toml.parse
+        //   break
+        case 'yaml':
+          parser = yaml.safeLoad
           break
         default:
           throw new Error('RessourceManager.parseRaw: file.type is null or not validated')
@@ -348,7 +360,7 @@ export default class RessourceManager {
   }
 
   isOfValidFormat(filepath = mandatory()) {
-    const validFormats = ['json', 'csv', 'xml']
+    const validFormats = ['json', 'csv', 'xml', 'yaml']
     if (validFormats.indexOf(this.getFormat(filepath)) !== -1) {
       return true
     }

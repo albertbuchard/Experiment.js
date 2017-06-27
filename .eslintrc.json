@@ -1,10 +1,10 @@
 {
   "env": {
-        "browser": true,
-        "jest": true
-    },
-    "extends": ["airbnb", "plugin:flowtype/recommended"],
-    "plugins": ["flowtype", "eslint-plugin-html"],
+      "browser": true,
+      "jest": true
+  },
+  "extends": ["airbnb", "plugin:flowtype/recommended"],
+  "plugins": ["flowtype", "eslint-plugin-html"],
     "rules": {
         "semi": [2, "never"],
         "no-unexpected-multiline": 2,
@@ -19,13 +19,10 @@
         "func-names": 0,
         "class-methods-use-this": 0,
         "no-restricted-syntax": 0,
-        "react/jsx-wrap-multilines": 0,
         "no-shadow": 0,
         "no-loop-func": 0,
         "no-continue": 0,
         "no-mixed-operators": ["error", {"allowSamePrecedence": true}],
-        "import/no-mutable-exports": 0,
-        "no-new": 0,
-        "prefer-arrow-callback": ["error", { "allowNamedFunctions": true }]
+        "import/no-mutable-exports": 0
     }
 }

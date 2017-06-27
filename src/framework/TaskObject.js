@@ -456,7 +456,7 @@ export default class TaskObject {
     }
 
     window.addEventListener('resize', () => {
-      delay(10).then(() => { this.engine.resize() })
+      this.engine.resize()
     })
 
     const deferred = new Deferred()
@@ -870,7 +870,7 @@ export default class TaskObject {
               const context = this.parentTaskObject.context
               for (const f of this.onResize) {
                 if (f.constructor !== Function) continue
-                delay(10).then(() => { f.bind(context)() })
+                f.bind(context)()
               }
             }
           }

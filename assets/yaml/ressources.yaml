@@ -1,0 +1,9 @@
+yamlString: |
+  Hey man I'm doing yaml like a boss.
+  Multiline that: Moth..
+
+yamlLocalizedString: {
+  en: "Man I am tired of bugs",
+  fr: "Moi aussi vieux..."
+  }
+  
