@@ -192,9 +192,9 @@ function Deferred() {
     this.reject = (e) => {
       this.rejected = true
       this.pending = false
-      if (e.constructor === String) {
-        e = new Error(e)
-      }
+      // if (e.constructor === String) {
+      //   e = new Error(e)
+      // }
       reject(e)
     }
   })
