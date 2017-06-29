@@ -22,7 +22,7 @@ export default class EventData {
     }
 
 
-    if (happenedAt.constructor === Object) {
+    if ((happenedAt) && (happenedAt.constructor === Object)) {
       // Treat it as the data
       if (data === null) {
         this.happenedAt = EventData.timeInMs
