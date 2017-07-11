@@ -17,7 +17,7 @@ class Loader extends BABYLON.Rectangle2D {
       marginAlignment: 'h: center, v: center',
       zOrder: 0.01,
       value: 0,
-      type: 'multi',
+      type: 'multiSequencial',
       centered: true,
     }
 
@@ -69,7 +69,7 @@ class Loader extends BABYLON.Rectangle2D {
       })
 
       this.masks = masks
-    } else if (this.options.type === 'multi') {
+    } else {
       this.borderThickness = 0
       this.fill = null
       this.drawRectangles()
@@ -83,7 +83,7 @@ class Loader extends BABYLON.Rectangle2D {
   update() {
     if (this.options.type === 'anticlock') {
       this.updateMasks()
-    } else if (this.options.type === 'multi') {
+    } else {
       this.updateRectangles()
     }
   }
@@ -106,6 +106,16 @@ class Loader extends BABYLON.Rectangle2D {
       this.rectangles.left.height = (fullWeight + residualLeft) * (this.size.height / 25)
       this.rectangles.right.height = (fullWeight) * (this.size.height / 25)
       this.rectangles.top.width = (fullWeight + residualTop) * (this.size.width / 25)
+    } else if (this.options.type === 'multiSequencial') {
+      if (this.value < this.lastUpdatedValue) { // TODO weird bug due to canvas2D again... cannot reduce the size of a Rectangle2D...
+        this.drawRectangles()
+      }
+      this.lastUpdatedValue = this.value
+
+      this.rectangles.bottom.width = this.value.boundTo(0, 25) * (this.size.width / 25)
+      this.rectangles.left.height = (this.value - 25).boundTo(0, 25) * (this.size.height / 25)
+      this.rectangles.right.height = (this.value - 50).boundTo(0, 25) * (this.size.height / 25)
+      this.rectangles.top.width = (this.value - 75).boundTo(0, 25) * (this.size.width / 25)
     }
   }
 
