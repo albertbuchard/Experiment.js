@@ -75,7 +75,7 @@
       const updateLoader = function () {
         delay(20).then(() => {
           if (loader.value >= 100) {
-            loader.value = 0
+            //loader.value = 0
           } else {
             loader.value += 1
           }
@@ -98,7 +98,8 @@
           borderThickness: _.random(1,5),
           marginAlignment: null,
           position: new BABYLON.Vector2(_.random(50,taskObject.renderSize.width-50),_.random(50,taskObject.renderSize.height-50)),
-          type: _.sample(['multi', 'anticlock'])
+          type: _.sample(['multi', 'anticlock']),
+          centered: _.sample([false, true])
         })
 
         const updateLoader = function () {
@@ -113,11 +114,11 @@
         }
         updateLoader()
 
-        delay(15000).then(() => {
+        delay(1000).then(() => {
           addLoader()
         })
       }
-      //addLoader()
+      addLoader()
 
       /* Generate a default pause menu and link it to spacebar stroke */
       scene.stateManager.setPauseKeyStroke()

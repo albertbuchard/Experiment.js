@@ -18,6 +18,7 @@ class Loader extends BABYLON.Rectangle2D {
       zOrder: 0.01,
       value: 0,
       type: 'multi',
+      centered: true,
     }
 
     options = _.extend(baseOptions, options)
@@ -123,7 +124,7 @@ class Loader extends BABYLON.Rectangle2D {
     this.rectangles.bottom = new BABYLON.Rectangle2D({
       parent: this,
       id: 'loaderRectangleBottom',
-      marginAlignment: 'h: left, v: bottom',
+      marginAlignment: this.options.centered ? 'h: center, v: center' : 'h: left, v: bottom',
       size: new BABYLON.Size(0, borderThickness),
       fill,
       zOrder: 0.001,
@@ -131,7 +132,7 @@ class Loader extends BABYLON.Rectangle2D {
     this.rectangles.right = new BABYLON.Rectangle2D({
       parent: this,
       id: 'loaderRectangleRight',
-      marginAlignment: 'h: right, v: top',
+      marginAlignment: this.options.centered ? 'h: center, v: center' : 'h: right, v: top',
       size: new BABYLON.Size(borderThickness, 0),
       fill,
       zOrder: 0.002,
@@ -139,7 +140,7 @@ class Loader extends BABYLON.Rectangle2D {
     this.rectangles.top = new BABYLON.Rectangle2D({
       parent: this,
       id: 'loaderRectangleTop',
-      marginAlignment: 'h: right, v: top',
+      marginAlignment: this.options.centered ? 'h: center, v: center' : 'h: right, v: top',
       size: new BABYLON.Size(0, borderThickness),
       fill,
       zOrder: 0.003,
@@ -147,11 +148,19 @@ class Loader extends BABYLON.Rectangle2D {
     this.rectangles.left = new BABYLON.Rectangle2D({
       parent: this,
       id: 'loaderRectangleLeft',
-      marginAlignment: 'h: left, v: bottom',
+      marginAlignment: this.options.centered ? 'h: center, v: center' : 'h: left, v: bottom',
       size: new BABYLON.Size(borderThickness, 0),
       fill,
       zOrder: 0.004,
     })
+
+    if (this.options.centered) {
+      // const baseMargin = { rightPixels: 0, leftPixels: 0, topPixels: 0, bottomPixels: 0}
+      _.extend(this.rectangles.left.margin, { rightPixels: (this.size.width / 2) - (borderThickness / 2) })
+      _.extend(this.rectangles.right.margin, { leftPixels: (this.size.width / 2) - (borderThickness / 2) })
+      _.extend(this.rectangles.top.margin, { bottomPixels: (this.size.height / 2) - (borderThickness / 2) })
+      _.extend(this.rectangles.bottom.margin, { topPixels: (this.size.height / 2) - (borderThickness / 2) })
+    }
   }
 
   updateMasks() {
