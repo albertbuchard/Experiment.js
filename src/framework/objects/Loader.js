@@ -75,6 +75,7 @@ class Loader extends BABYLON.Rectangle2D {
     }
 
     this._value = options.value
+    this.lastUpdatedValue = this._value
     this.update()
   }
 
@@ -88,9 +89,11 @@ class Loader extends BABYLON.Rectangle2D {
 
   updateRectangles() {
     if (this.options.type === 'multi') {
-      if (hasConstructor(Object, this.rectangles)) {
+      if (this.value < this.lastUpdatedValue) { // TODO weird bug due to canvas2D again... cannot reduce the size of a Rectangle2D...
         this.drawRectangles()
       }
+      this.lastUpdatedValue = this.value
+
       const fullWeight = Math.floor(this.value / 4)
       const residual = this.value % 4
 
@@ -99,8 +102,8 @@ class Loader extends BABYLON.Rectangle2D {
       const residualLeft = residual > 1 ? 1 : 0
 
       this.rectangles.bottom.width = (fullWeight + residualBottom) * (this.size.width / 25)
-      this.rectangles.left.width = (fullWeight + residualLeft) * (this.size.width / 25)
-      this.rectangles.right.width = (fullWeight) * (this.size.width / 25)
+      this.rectangles.left.height = (fullWeight + residualLeft) * (this.size.height / 25)
+      this.rectangles.right.height = (fullWeight) * (this.size.height / 25)
       this.rectangles.top.width = (fullWeight + residualTop) * (this.size.width / 25)
     }
   }
@@ -109,7 +112,7 @@ class Loader extends BABYLON.Rectangle2D {
     if (hasConstructor(Object, this.rectangles) && this.rectangles.hasOwnProperty('bottom') && hasConstructor(BABYLON.Rectangle2D, this.rectangles.bottom)) {
       for (const rectangle in this.rectangles) {
         if (this.rectangles.hasOwnProperty(rectangle)) {
-          if (typeof rectangle.dispose === 'function') { rectangle.dispose() }
+          if (typeof this.rectangles[rectangle].dispose === 'function') { this.rectangles[rectangle].dispose() }
         }
       }
     }
