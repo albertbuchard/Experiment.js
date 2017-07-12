@@ -569,29 +569,32 @@ export default class DataManager {
       // ((connection.constructor === Object) && (typeof connection.variables !== 'undefined') && (typeof connection.variables.login !== 'undefined') && (connection.variables.login.constructor === String)) {
     if ((_.has(connection, 'login')) && (connection.login.constructor === String)) {
       if (variables === null) {
-        const errorMessage = connection.lastErrorMessage || null
-        const formDeferred = this.signInForm(connection.signInForm, errorMessage)
-        this.isCurrentlySigningIn = formDeferred
-        return formDeferred.promise.then((credentials) => {
-          deferred.status = 0
-          return this.login(connection, credentials, deferred)// call a smartForm modal with userId and password
-        })
-      }
+        if (this.authorize_manual_login) {
+          const errorMessage = connection.lastErrorMessage || null
+          const formDeferred = this.signInForm(connection.signInForm, errorMessage)
+          this.isCurrentlySigningIn = formDeferred
+          return formDeferred.promise.then((credentials) => {
+            deferred.status = 0
+            return this.login(connection, credentials, deferred)// call a smartForm modal with userId and password
+          })
+        }
+        deferred.reject()
+      } else {
         // perform ajax with the variables as credentials
-      const data = {
-        interface: connection.type,
-        credentials: variables,
-        query: connection.login,
-      }
+        const data = {
+          interface: connection.type,
+          credentials: variables,
+          query: connection.login,
+        }
 
           // send the data through ajax in json format
-      $.ajax({
-        url: connection.endpoint,
-        type: 'POST',
-        data: JSON.stringify(data),
-        contentType: 'application/json',
-      })
-          .done(function done(data, status) {
+        $.ajax({
+          url: connection.endpoint,
+          type: 'POST',
+          data: JSON.stringify(data),
+          contentType: 'application/json',
+        })
+          .done((data, status) => {
             // if success set credentials inside the connection
             connection.credentials = data.credentials
             connection.loggedIn = true
@@ -600,7 +603,7 @@ export default class DataManager {
             }
             debuglog(`DataManager.push: successful ajax call with status ${status}`, data)
             deferred.resolve()
-          }.bind(this))
+          })
           .fail(function (connection, xhr) {
             // if failure call login with no variables to call a smartForm
             const json = xhr.responseJSON || { message: '', tooMuchTry: false }
@@ -619,6 +622,7 @@ export default class DataManager {
               deferred.reject(message)
             }
           }.bind(this, connection))
+      }
     } else {
       deferred.reject(`DataManager.login: no valid login enpoint for the connection ${connection.name}`)
     }

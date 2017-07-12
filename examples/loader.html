@@ -75,7 +75,7 @@
       const updateLoader = function () {
         delay(20).then(() => {
           if (loader.value >= 100) {
-            loader.value = 0
+            //loader.value = 0
           } else {
             loader.value += 1
           }
@@ -97,7 +97,9 @@
           border: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(Math.random(), Math.random(), Math.random(), 1)),
           borderThickness: _.random(1,5),
           marginAlignment: null,
-          position: new BABYLON.Vector2(_.random(50,taskObject.renderSize.width-50),_.random(50,taskObject.renderSize.height-50))
+          position: new BABYLON.Vector2(_.random(50,taskObject.renderSize.width-50),_.random(50,taskObject.renderSize.height-50)),
+          type: _.sample(['multi', 'anticlock', 'multiSequencial']),
+          centered: _.sample([false, true])
         })
 
         const updateLoader = function () {

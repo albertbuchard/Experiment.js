@@ -23,6 +23,8 @@ An open-source, cross-platform, and headache-free development framework that mak
     + One language Javascript: native for web / Node.js + Electron for fMRI / Cordova for mobile
 - Produces high quality apps in 2D or 3D
     + BABYLON.JS — Open source 3D engine with an active community
+    + THREE.JS - Will be added soon as a possible backend
+    + P5.JS - Compatibility will be added soon for 2D only projects
 - Any scientist with basic coding skills should be able to learn and develop apps in the framework
     + JS allow to build web GUI to help novice build tasks
     + Boiler plates on Github / Examples / Playground
@@ -176,6 +178,8 @@ Optionals: experiment-api
 
 # Roadmap
 
+- Implement Three.js as backend
+- Implement p5.js as backend
 - Documentation 2D / 3D + link to Babylon.js
 - Website
 - Electron boilerplate with parallel port support
