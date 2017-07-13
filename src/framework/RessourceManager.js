@@ -2,7 +2,7 @@
 import $ from 'jquery'
 import Promise from 'bluebird'
 
-import { mandatory, debugError, Deferred } from './utilities'
+import { mandatory, debugError, Deferred, debugWarn } from './utilities'
 
 //eslint-disable-next-line
 const yaml = require('js-yaml') // TODO try to find another way... this is too heavy
@@ -90,7 +90,7 @@ export default class RessourceManager {
         this.files[i].data = null
         promises.push(this.loadFile(i))
       } else {
-        console.warn(`RessourceManager.addFiles: invalid type for ${concatFilepaths[i]}`)
+        debugWarn(`RessourceManager.addFiles: invalid type for ${concatFilepaths[i]}`)
       }
     }
 
@@ -339,7 +339,7 @@ export default class RessourceManager {
     }
 
     if (!(this.data[familly].hasOwnProperty(name)) || overwrite) {
-      console.warn(`RessourceManager.addByName: already a ressource named ${name} - Overwriting it.`)
+      debugWarn(`RessourceManager.addByName: already a ressource named ${name} - Overwriting it.`)
       this.data[familly][name] = value
     }
   }
@@ -509,7 +509,7 @@ export default class RessourceManager {
             lookForLanguage = path[i]
           } else {
             if (typeof lookForVariable !== 'undefined') {
-              console.error(`RessourceManager.get: at least two possible variable names into path: ${lookForVariable} and ${path[i]}`)
+              debugError(`RessourceManager.get: at least two possible variable names into path: ${lookForVariable} and ${path[i]}`)
               return undefined
             }
             lookForVariable = path[i]
@@ -531,7 +531,7 @@ export default class RessourceManager {
         } else {
           result = target.lookFor(lookForVariable)
           if (typeof result === 'undefined') {
-            console.error(`RessourceManager.get: no ressource for path ${lookForFamilly}.${lookForVariable}`)
+            debugError(`RessourceManager.get: no ressource for path ${lookForFamilly}.${lookForVariable}`)
             return undefined
           }
         }
@@ -541,10 +541,10 @@ export default class RessourceManager {
         } else if (result.hasOwnProperty(lookForLanguage)) {
           return result[lookForLanguage]
         } else if (result.hasOwnProperty(target.currentLanguage)) {
-          console.warn(`RessourceManager.get: no valid language, defaulting to ${target.currentLanguage}`)
+          debugWarn(`RessourceManager.get: no valid language, defaulting to ${target.currentLanguage}`)
           return result[target.currentLanguage]
         }
-        console.warn('RessourceManager.get: no localization language found, returning the whole object')
+        debugWarn('RessourceManager.get: no localization language found, returning the whole object', path)
         return result
       },
 
