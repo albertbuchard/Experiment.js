@@ -35,13 +35,13 @@ function noop() {}
  * Debug functions
  */
 const debuglog = function debuglog(...args) {
-  return window.DEBUG_MODE_ON ? console.log(...args) : noop()
+  return (window && window.DEBUG_MODE_ON) ? console.log(...args) : noop()
 }
 const debugWarn = function debugWarn(...args) {
-  return window.DEBUG_MODE_ON ? console.warn(...args) : noop()
+  return (window && window.DEBUG_MODE_ON) ? console.warn(...args) : noop()
 }
 const debugError = function debugError(...args) {
-  return window.DEBUG_MODE_ON ? console.error(...args) : noop()
+  return (window && window.DEBUG_MODE_ON) ? console.error(...args) : noop()
 }
 
 /**
