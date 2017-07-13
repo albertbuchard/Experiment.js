@@ -34,9 +34,15 @@ function noop() {}
 /**
  * Debug functions
  */
-const debuglog = DEBUG_MODE_ON ? console.log.bind(console) : noop
-const debugWarn = DEBUG_MODE_ON ? console.warn.bind(console) : noop
-const debugError = DEBUG_MODE_ON ? console.error.bind(console) : noop
+const debuglog = function debuglog(...args) {
+  return (window && window.DEBUG_MODE_ON) ? console.log(...args) : noop()
+}
+const debugWarn = function debugWarn(...args) {
+  return (window && window.DEBUG_MODE_ON) ? console.warn(...args) : noop()
+}
+const debugError = function debugError(...args) {
+  return (window && window.DEBUG_MODE_ON) ? console.error(...args) : noop()
+}
 
 /**
  * Allows to return an error for missing parameters.
