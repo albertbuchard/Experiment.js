@@ -896,6 +896,207 @@ export default class TaskObject {
     return (scene)
   }
 
+
+    /**
+     * create3DScene - 3D Scene generator with an initialCanvas of the specifified size
+     * Babylon Scene objects are enriched in experiment-js with:
+     *  - sceneKey
+     *  - parentTaskObject
+     *  - stateManager
+     *  - dataManager
+     *  - initialCanvas
+     *  - initialCamera
+     *  - initialLight
+     *  - updateContentFrame
+     * Importantly - The registerBeforeRender() lifecycle function calls the update function of the stateManager
+     *
+     * @param {object} [options] Object with key-value options for the 2D scene, defaults are :
+     *  - sceneKey: `scene${Math.random() * 100000}`,
+     *  - canvasBackground: new BABYLON.Color4(0, 0, 0, 1),
+     *  - backgroundRoundRadius: 50,
+     *  - clearColor: new BABYLON.Color4(0, 0, 0, 1),
+     *  - canvasPercentWidth: 0.8,
+     *  - canvasPercentHeight: 1,
+     *
+     *
+     * @returns {BABYLON.Scene}
+     */
+  create3DScene(options = mandatory()) {
+    const optionsBase = {
+      sceneKey: `scene${Math.random() * 100000}`,
+      canvasBackground: new BABYLON.Color4(0, 0, 0, 1),
+      backgroundRoundRadius: 0,
+      clearColor: new BABYLON.Color4(0, 0, 0, 1),
+      camera: [0, 0, 5, BABYLON.Vector3.Zero()],
+      width: null,
+      height: null,
+      canvasPercentWidth: 1,
+      canvasPercentHeight: 1,
+      lightIntensity: 1,
+      minWidth: Number.NEGATIVE_INFINITY,
+      minHeight: Number.NEGATIVE_INFINITY,
+      maxWidth: Number.POSITIVE_INFINITY,
+      maxHeight: Number.POSITIVE_INFINITY,
+    }
+
+    options = _.extend(optionsBase, options)
+
+    const getCanvasDimensions = (noNull = true) => {
+      let size = null
+      let width = null
+      let height = null
+
+      const pWidth = (this.renderSize.width * options.canvasPercentWidth).boundTo(options.minWidth, options.maxWidth)
+      const pHeight = (this.renderSize.height * options.canvasPercentHeight).boundTo(options.minWidth, options.maxHeight)
+
+      let x = null
+      let y = null
+
+      if (options.width) {
+        width = options.width
+      } else if (options.canvasPercentWidth !== 1) {
+        width = pWidth
+      }
+      if (options.height) {
+        height = options.height
+      } else if (options.canvasPercentHeight !== 1) {
+        height = pHeight
+      }
+
+      if ((height !== null) || (width !== null) || noNull) {
+        size = new BABYLON.Size(width !== null ? width : pWidth, height !== null ? height : pHeight)
+        x = (this.renderSize.width / 2) - ((this.renderSize.width * options.canvasPercentWidth) / 2)
+        y = (this.renderSize.height / 2) - ((this.renderSize.height * options.canvasPercentHeight) / 2)
+      }
+
+      return { size, x, y }
+    }
+
+    const { size: customSized } = getCanvasDimensions()
+
+
+    const scene = new BABYLON.Scene(this.engine)
+
+      /**
+       * Holds the scenekey inside the scene object.
+       * @type {string}
+       */
+    scene.sceneKey = options.sceneKey
+
+      /**
+       * Reference to the parent taskObject
+       * @type {TaskObject}
+       */
+    scene.parentTaskObject = this
+
+      /* --- Add a stateManager --- */
+    this.addStateManager(scene)
+
+      /* --- Set background --- */
+    scene.clearColor = options.clearColor
+    options.clearColor[3] = 0
+
+    const camOptions = ['Camera', ...options.camera, scene]
+    const camera = new BABYLON.ArcRotateCamera(...camOptions)
+
+    camera.attachControl(this.canvas, true)
+
+   // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+    const light = new BABYLON.HemisphericLight('Light', new BABYLON.Vector3(0, 1, 0), scene)
+
+   // Default intensity is 1. Let's dim the light a small amount
+    light.intensity = options.lightIntensity
+
+    let canvasOptions = {
+      id: 'ScreenCanvas',
+      backgroundFill: BABYLON.Canvas2D.GetSolidColorBrush(options.clearColor),
+      fill: BABYLON.Canvas2D.GetSolidColorBrush(options.clearColor),
+      zOrder: 1,
+    }
+
+    const canvas = new BABYLON.ScreenSpaceCanvas2D(scene, canvasOptions)
+
+    canvasOptions = {
+      id: 'initialCanvas',
+      parent: canvas,
+      roundRadius: options.backgroundRoundRadius,
+      borderThickness: 0,
+      fill: BABYLON.Canvas2D.GetSolidColorBrush(options.canvasBackground),
+      marginAlignment: 'h: center, v: center',
+      size: customSized,
+      zOrder: 1,
+    }
+
+    const initialCanvas = new BABYLON.Rectangle2D(canvasOptions)
+
+    /* Set the added canvas and camera to known fields in the scene*/
+    scene.screenCanvas = canvas
+    scene.initialCanvas = initialCanvas
+    scene.initialCamera = camera
+    scene.initialLight = light
+
+    canvas.levelVisible = false
+
+    scene.initialCanvas.lastResize = this.timeInMs
+
+      /* Create a GUI canvas */
+    scene.initialGui = scene.stateManager.addGuiCanvas()
+
+      /* ======= Debug mode ======= */
+    if ((typeof window.DEBUG_MODE_ONE !== 'undefined') && (window.DEBUG_MODE_ONE === true)) {
+        // canvas.createCanvasProfileInfoCanvas()
+    }
+
+      /* ======== Scene Lifecycle ======== */
+
+      /* --- Resize handler --- */
+    const updateContentFrame = function () {
+        // this refers to the scene here
+      if (customSized) {
+        this.initialCanvas.resizeAt = this.parentTaskObject.timeInMs + 1000
+        delay(1000).then(() => {
+          if ((this.parentTaskObject.timeInMs - this.initialCanvas.lastResize > 100) && (this.initialCanvas.resizeAt < this.parentTaskObject.timeInMs)) {
+              // ((this.parentTaskObject.renderSize.width / 2) - (this.initialCanvas.size.width / 2), (this.parentTaskObject.renderSize.height / 2) - (this.initialCanvas.size.height / 2))
+            this.initialCanvas.lastResize = this.parentTaskObject.timeInMs
+            const { size: customSized } = getCanvasDimensions()
+            debugWarn('scene.updateContentFrame: window has been resized ', customSized)
+            this.initialCanvas.size = customSized
+
+              // check if the user has defined custom resize functions
+            if ((typeof this.onResize !== 'undefined') && (this.onResize !== null)) {
+              if (this.onResize.constructor === Function) {
+                this.onResize = [this.onResize]
+              }
+
+              const context = this.parentTaskObject.context
+              for (const f of this.onResize) {
+                if (f.constructor !== Function) continue
+                f.bind(context)()
+              }
+            }
+          }
+        })
+      }
+    }
+
+
+    scene.updateContentFrame = updateContentFrame
+
+      /**
+       * Custom resize functions called by updateContentFrame. Can be set by the user
+       * to perform scene updates on resize. Can be an array of function or a single function.
+       * @type {!function|array}
+       */
+    scene.onResize = null
+
+      /* Scene update */
+    scene.registerBeforeRender(() => {
+      scene.stateManager.update()
+    })
+
+    return (scene)
+  }
+
   /* ======= dataManager ======= */
   setConnection(variables = mandatory()) {
     if (!this.dataManager) {
