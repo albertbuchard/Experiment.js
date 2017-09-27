@@ -10,7 +10,7 @@
     "prod": "PROD_ENV=1 webpack --progress --colors --watch",
     "patchPublish": "npm version patch && npm publish",
     "devserver": "webpack-dev-server",
-    "phpServer": "php -S localhost:8010"
+    "phpServer": "`php -S localhost:8010`"
   },
   "repository": {
     "type": "git",
