@@ -19,6 +19,7 @@ class Loader extends BABYLON.Rectangle2D {
       value: 0,
       type: 'multiSequencial',
       centered: true,
+      text: '',
     }
 
     options = _.extend(baseOptions, options)
@@ -74,6 +75,17 @@ class Loader extends BABYLON.Rectangle2D {
       this.fill = null
       this.drawRectangles()
     }
+
+    this.textField = new BABYLON.Text2D(options.text, {
+      fontName: options.fontName,
+      parent: this,
+      marginVAlignment: 'v: center',
+      fontSignedDistanceField: options.fontSignedDistanceField,
+      marginHAlignment: 3,
+      zOrder: 0.005,
+    })
+
+    _.extend(this.textField.margin, { topPixels: (this.size.height / 2) - (this.borderThickness / 2) })
 
     this._value = options.value
     this.lastUpdatedValue = this._value

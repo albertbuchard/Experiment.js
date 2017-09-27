@@ -671,7 +671,7 @@ export default class DataManager {
           const json = xhr.responseJSON || { message: '', shouldLog: false }
           if (json.shouldLog) {
             debugError('DataManager.push: user is not logged in -- will call the log function.')
-            this.login(connection).then(() => { this.query(query, variables, connection, deferred) })
+            this.login(connection, null, deferred).then(() => { this.query(query, variables, connection, deferred) })
           } else {
             debugError('DataManager.push: could not perform query -- will retry', JSON.stringify(query), json.message)
             this.query(query, variables, connection, deferred)

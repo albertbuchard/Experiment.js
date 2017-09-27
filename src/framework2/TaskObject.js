@@ -1795,3 +1795,60 @@ export default class TaskObject {
     throw new Error('TaskObject: argument is not of type array.')
   }
 }
+
+
+/*
+How it should work for 2.0
+
+experiment is a name space with a lot of helper functions added to it
+it creates TaskObjects if they have not been created and make sure
+the context is passed accros the chain
+The context is chained to allow for functions to follow each other
+
+The chain is not chaining on promises, only the context is passed, the promise chain
+is created inside the help functions depending on the context.
+All those function create an event function :
+  when(x) create a repeating promise chain by adding an event function - it sets
+    up a context that can be used down the chain to add functions to the promise chained associated
+    with the event
+  once(x) create an unrepeating promise chain
+  on(click) the function will then call the chain,
+
+Some nodes block the chain by testing on previous values like
+click.over() or on(click).at(x,y)
+
+Events are passed down the chain with the context.
+
+experiment.target([div]).engine(name)
+
+experiment.setConnection(options)
+
+experiment
+.setResources(R)
+.loadFiles([...])
+.createA2dScene(options)
+
+experiment.scene(id)
+.addTable
+.setTables
+.addState
+
+experiment
+.state(id, [scene])
+.when(event).wait(f, options).do(f, options).store(var, val).show(m).hide(m)
+  .addEvent()
+  .addMesh()
+  .addImage().on(click).over([id]).at(x,y)
+  .playSound().stopSound()
+  .playAnimation().stopAnimation()
+  .pause([state])
+
+experiment.run()
+
+To allow for chaining the experiment object is always passed
+
+task.scene(id) should return a scene object that is able to interface with any
+of the graphic engine, on which you can use all the low level graphic function
+The experiment.js specific variables should be stored in a experimentjs attribute
+
+ */

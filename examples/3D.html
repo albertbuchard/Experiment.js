@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Experiment[js].exampleOne</title>
+  <script src="../node_modules/jquery/dist/jquery.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+  <script src="../node_modules/experiment-mathjs/dist/math.js"></script>
+  <!-- <script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script> -->
+  <!-- <script src="http://cdn.jsdelivr.net/bluebird/3.4.7/bluebird.js"></script> -->
+  <script src="../node_modules/lodash/lodash.js"></script>
+  <script src="../node_modules/chartjs/chart.js"></script>
+  <script src="../node_modules/experiment-babylon-js/lib/babylon.max.js"></script>
+  <script src="../node_modules/experiment-boxes/lib/experimentBoxes.max.js" charset="utf-8"></script>
+  <script src="../lib/experiment.max.js" charset="utf-8"></script>
+  <style>
+  html, body {
+    /*overflow: hidden;*/
+    width   : 100%;
+    height  : 100%;
+    margin  : 0;
+    padding : 0;
+  }
+
+  .task-canvas {
+    width   : 100%;
+    height  : 100%;
+    touch-action: none;
+  }
+
+  body {
+    background: #E3E3E3;
+  }
+  </style>
+  <script>
+  /* global TaskObject BABYLON ParamBox delay _ fadeout math DEBUG_MODE_ON EventData*/
+  DEBUG_MODE_ON = false
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const taskObject = new TaskObject(document.getElementsByClassName('task-canvas'))
+
+    /* Create a custom scene by making a scene generator function */
+    const sceneGenerator = function (options) {
+      /**
+       * As it is the case for all functions called by the framework
+       * they are passed down a custom context through 'this'
+       * @see context
+       */
+      const context = this
+
+      const taskObject = context.taskObject
+      const R = context.R
+
+      const optionsBase = {
+        sceneKey: 'main',
+        canvasBackground: new BABYLON.Color4(0, 0.1, 0, 0),
+        backgroundRoundRadius: 50,
+        clearColor: new BABYLON.Color4(0, 0, 0, 1),
+        canvasPercentWidth: 1,
+        canvasPercentHeight: 1,
+        camera: [0, Math.PI / 2, 5, BABYLON.Vector3.Zero()],
+        mode: 'central',
+        level: null,
+      }
+
+      options = _.extend(optionsBase, options)
+
+      const scene = taskObject.create3DScene(options)
+
+      const texture = taskObject.cloneAssetIntoScene(taskObject.R.get.textures_logo2, scene)
+      texture.hasAlpha = true
+
+      // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
+      const sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene)
+
+      // Move the sphere upward 1/2 its height
+      sphere.position.y = 1
+
+      // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
+      const ground = BABYLON.Mesh.CreateGround("ground1", 6, 6, 2, scene)
+
+      // Let's remove default keyboard:
+      //camera.inputs.removeByType("FreeCameraKeyboardMoveInput");
+
+      scene.stateManager.states.active.addAwakeningFunctions(function awaken() {
+
+        this.taskObject.modal({ title: 'Example One', content: 'This is a simple modal.<br>Showed for information purposes', event: new EventData('caca', { forState: 'pipi' }) })
+        .then(() => { console.log('Life is like a box of chocolate')})
+      })
+
+      scene.stateManager.states.active.addEndingFunctions(function ending() {
+
+        })
+
+      scene.stateManager.states.active.addEventFunctions(R.get.events_modalDismissed, () => { console.log('Main scene modal was dismissed') })
+
+      /* Generate a default pause menu and link it to spacebar stroke */
+      scene.stateManager.setPauseKeyStroke()
+
+      scene.onResize = function () {
+        this.stateManager.newEvent(R.get.events_pause)
+      }
+
+
+      return scene
+    }
+
+    taskObject.registerSceneGenerator(sceneGenerator)
+
+    taskObject.assetsToLoad = {
+      logo2: {
+        path: '/assets/experiment-js-light.svg',
+        type: 'texture',
+      },
+    }
+
+    taskObject.startTask().then((message) => {
+      console.log(message)
+      // Try this in the console :
+
+      taskObject.currentScene = 'main'
+    })
+
+    window.taskObject = taskObject
+  })
+  </script>
+</head>
+<body>
+  <!-- Create a canvas for the task -->
+  <canvas class="task-canvas">
+    <p>
+      Your browser does not support the canvas element and will not be able to render the task.
+    </p>
+    <p>
+      Please install Google Chrome to continue: https://www.google.com/chrome
+    </p>
+  </canvas>
+</body>
+</html>
