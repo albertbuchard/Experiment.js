@@ -21,6 +21,7 @@ class Loader extends BABYLON.Rectangle2D {
       centered: true,
       text: '',
       fontName: '8pt Verdana',
+      textOffset: 8,
     }
 
     options = _.extend(baseOptions, options)
@@ -85,7 +86,7 @@ class Loader extends BABYLON.Rectangle2D {
       zOrder: 0.005,
     })
 
-    _.extend(this.textField.margin, { topPixels: (this.size.height / 2) + this.borderThickness + 10 })
+    _.extend(this.textField.margin, { topPixels: (this.size.height / 2) + this.borderThickness + options.textOffset })
 
     this._value = options.value
     this.lastUpdatedValue = this._value
