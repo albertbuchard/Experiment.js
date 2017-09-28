@@ -71,7 +71,8 @@
       const loader = new experiment.Loader({ parent: scene.initialCanvas, size: new BABYLON.Size(100, 40), border: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.7, 1, 0.7, 1)), borderThickness: 4 })
       const loader2 = new experiment.Loader({ parent: scene.initialCanvas, size: new BABYLON.Size(100, 100), border: BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(1, 0.7, 0.7, 1)), borderThickness: 4,
         marginAlignment: 'h: left, v: center',
-        text:'Text-it' })
+        text:'Text-it',
+        textOffset: 8 })
 
       const updateLoader = function () {
         delay(20).then(() => {
